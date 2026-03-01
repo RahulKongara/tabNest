@@ -27,7 +27,7 @@
 
 ### Sidebar UI
 
-- [ ] **UI-01**: Sidebar displays a unified view of all lifecycle stages (active, discarded, saved, archived) blended within group cards
+- [x] **UI-01**: Sidebar displays a unified view of all lifecycle stages (active, discarded, saved, archived) blended within group cards
 - [x] **UI-02**: Each group card shows: color bar, group name (editable on double-click), stage count badge (e.g., "3 open · 8 saved"), expand/collapse toggle
 - [x] **UI-03**: Each tab entry shows: favicon, truncated title (full on hover), domain, lifecycle stage indicator (green dot / blue dot / bookmark / clock), stateful URL ⚠️ badge, action icons
 - [ ] **UI-04**: Search input filters all entries (active + saved + archived) by title, URL, and group name in real-time (< 100ms for 200 entries)
@@ -123,7 +123,7 @@
 | GROUP-02 | Phase 1 | Complete |
 | GROUP-03 | Phase 3 | Pending |
 | GROUP-04 | Phase 3 | Pending |
-| UI-01 | Phase 2 | Pending |
+| UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Complete |
 | UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 3 | Pending |

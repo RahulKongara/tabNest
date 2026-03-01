@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 2 of 6 (Sidebar MVP)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-03-01 — Plan 02-03 complete: sidebar.html complete semantic structure + sidebar.css full responsive layout with 4-stage indicators, group card color theming, collapse behavior, and hover-reveal action buttons
+Last activity: 2026-03-01 — Plan 02-02 complete: Full chrome.runtime message protocol — 32 MSG_TYPES constants, 23-type onMessage dispatcher with GET_FULL_STATE/RESTORE_TAB fully implemented, runtime.connect push port for sidebar push messages
 
-Progress: [######░░░░] 24% (6/25 plans complete)
+Progress: [######░░░░] 28% (7/25 plans complete)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [######░░░░] 24% (6/25 plans complete)
 | 01-foundation | P04 | 3m | 2 | 3 |
 | 02-sidebar-mvp | P03 | 3m | 2 | 2 |
 | 02-sidebar-mvp | P01 | 3m | 2 | 4 |
+| 02-sidebar-mvp | P02 | 10m | 2 | 5 |
 
 ## Accumulated Context
 
@@ -91,6 +92,11 @@ Recent decisions affecting current work:
 - [02-01]: saveState() stamps state.timestamp = Date.now() before writing — callers don't manage timestamps
 - [02-01]: getSettings() spread { ...DEFAULT_SETTINGS, ...stored } — stored values override defaults, missing fields always get defaults
 - [02-01]: globalThis._savedState set in initializeRegistry() — avoids extra storage read in GET_FULL_STATE handler; reconciliation logic in 02-05
+- [02-02]: MSG_TYPES values are identical to their key names (e.g., GET_FULL_STATE: 'GET_FULL_STATE') — no mapping table needed, self-documenting in DevTools
+- [02-02]: pushToSidebar clears sidebarPort on catch — prevents accumulation of dead port references across sidebar reloads
+- [02-02]: handleMessage is a named async function separate from onMessage listener — allows direct unit testing without mocking the message channel
+- [02-02]: RESTORE_TAB implemented fully (RESTORE-01) — mutates globalThis._savedState.savedEntries in place and persists via StorageManager.saveState
+- [02-02]: Phase-labelled stubs return { success: true, _stub: true } — sidebar action buttons won't break before Phase 3/5 wiring
 
 ### Pending Todos
 
@@ -99,11 +105,11 @@ None.
 ### Blockers/Concerns
 
 - [Phase 1]: MV3 service workers are non-persistent — background.js must reinitialize from storage on every wake. All state must be readable from storage.local within the first alarm tick.
-- [Phase 2]: Message protocol must be fully defined before sidebar components are built; both consumer (sidebar) and producer (background) must agree on all 23+9 message types.
+- [Phase 2]: Message protocol must be fully defined before sidebar components are built; both consumer (sidebar) and producer (background) must agree on all 23+9 message types. [RESOLVED in 02-02: MSG_TYPES constants defined; onMessage handler dispatching all 23 types]
 - [Phase 6]: Firefox `tabs.discard()` availability needs to be runtime-checked via browser-adapter.js, not build-time assumed. [RESOLVED in 01-02: _canDiscard feature flag]
 
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-01-PLAN.md — StorageManager with 30s debounced save (SESS-01) and startup session restore hook (SESS-02) wired into background.js and background-firefox.js
+Stopped at: Completed 02-02-PLAN.md — Full message protocol: 32 MSG_TYPES constants in sidebar/message-protocol.js, onMessage handler dispatching all 23 types, runtime.connect push port for sidebar push messages
 Resume file: None
