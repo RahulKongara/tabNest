@@ -73,9 +73,15 @@ global.BrowserAdapter = {
     onDetached:  { addListener: (fn) => listeners.onDetached.push(fn) },
     onReplaced:  { addListener: (fn) => listeners.onReplaced.push(fn) },
     query: async () => [],
+    create: async (opts) => ({ id: 1000, url: opts && opts.url }),
+    discard: async () => {},
   },
   storage: {
     local: {
+      get: async () => ({}),
+      set: async () => {},
+    },
+    sync: {
       get: async () => ({}),
       set: async () => {},
     },
@@ -91,6 +97,8 @@ global.BrowserAdapter = {
   runtime: {
     onInstalled: { addListener: (fn) => listeners.onInstalled.push(fn) },
     onStartup:   { addListener: (fn) => listeners.onStartup.push(fn) },
+    onConnect:   { addListener: () => {} },
+    onMessage:   { addListener: () => {} },
   },
 };
 
@@ -98,7 +106,28 @@ global.chrome = { windows: { WINDOW_ID_NONE: -1 } };
 global.importScripts = () => {};
 global.LifecycleManager = { tick: async () => {}, start: () => {} };
 global.GroupingEngine   = { classify: () => 'other' };
-global.StorageManager   = { loadState: async () => null };
+global.StorageManager   = {
+  loadState:     async () => null,
+  saveState:     async () => {},
+  scheduleSave:  () => {},
+  getSettings:   async () => ({}),
+  saveSettings:  async () => {},
+};
+global.MSG_TYPES = {
+  TAB_CREATED: 'TAB_CREATED', TAB_UPDATED: 'TAB_UPDATED', TAB_REMOVED: 'TAB_REMOVED',
+  TAB_DISCARDED: 'TAB_DISCARDED', TAB_SAVED_AND_CLOSED: 'TAB_SAVED_AND_CLOSED',
+  TAB_RESTORED: 'TAB_RESTORED', TAB_ARCHIVED: 'TAB_ARCHIVED', GROUP_UPDATED: 'GROUP_UPDATED',
+  SETTINGS_CHANGED: 'SETTINGS_CHANGED', GET_FULL_STATE: 'GET_FULL_STATE',
+  GET_SETTINGS: 'GET_SETTINGS', SAVE_SETTINGS: 'SAVE_SETTINGS', RESTORE_TAB: 'RESTORE_TAB',
+  DISCARD_TAB: 'DISCARD_TAB', SAVE_AND_CLOSE_TAB: 'SAVE_AND_CLOSE_TAB',
+  MOVE_TO_GROUP: 'MOVE_TO_GROUP', SAVE_ALL_INACTIVE: 'SAVE_ALL_INACTIVE',
+  DISCARD_ALL_INACTIVE: 'DISCARD_ALL_INACTIVE', CREATE_GROUP: 'CREATE_GROUP',
+  RENAME_GROUP: 'RENAME_GROUP', SET_GROUP_COLOR: 'SET_GROUP_COLOR', DELETE_GROUP: 'DELETE_GROUP',
+  MERGE_GROUPS: 'MERGE_GROUPS', ARCHIVE_GROUP: 'ARCHIVE_GROUP', RESTORE_WORKSPACE: 'RESTORE_WORKSPACE',
+  SAVE_WORKSPACE: 'SAVE_WORKSPACE', LIST_WORKSPACES: 'LIST_WORKSPACES',
+  DELETE_WORKSPACE: 'DELETE_WORKSPACE', EXPORT_DATA: 'EXPORT_DATA', IMPORT_DATA: 'IMPORT_DATA',
+  CLEAR_DATA: 'CLEAR_DATA', OPEN_SETTINGS_PANEL: 'OPEN_SETTINGS_PANEL',
+};
 
 // ─── Load background.js ────────────────────────────────────────────────────────
 

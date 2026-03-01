@@ -119,7 +119,7 @@
     tabRegistry.clear();
     const savedTimestamps = await loadSavedTimestamps();
 
-    // Load last saved session state (SESS-02: startup reconciliation)
+    // SESS-02: Load and reconcile saved session state
     // Stored on globalThis so the GET_FULL_STATE message handler (wired in 02-02)
     // can return savedEntries and groups to the sidebar without re-reading storage.
     let savedState = null;
@@ -128,7 +128,19 @@
     } catch {
       savedState = null;
     }
+
+    // Normalize: ensure groups is always an array
+    if (savedState && !Array.isArray(savedState.groups)) {
+      savedState.groups = CONSTANTS.DEFAULT_GROUPS;
+    }
+    if (savedState && !Array.isArray(savedState.savedEntries)) {
+      savedState.savedEntries = [];
+    }
+
     globalThis._savedState = savedState;
+    console.log('[TabNest FF] Saved state loaded:', savedState
+      ? `${savedState.savedEntries.length} saved entries, ${savedState.groups.length} groups`
+      : 'none (fresh start)');
 
     // Load user rules for GroupingEngine classification
     await refreshUserRulesCache();
@@ -147,6 +159,20 @@
     }
   }
 
+  /**
+   * Build the session state blob to persist to storage.local.
+   * Includes savedEntries and groups from _savedState (preserves Phase 3+ customizations).
+   * @returns {{ savedEntries: SavedTabEntry[], groups: TabGroup[], timestamp: number }}
+   */
+  function buildSessionState() {
+    const savedState = globalThis._savedState || {};
+    return {
+      savedEntries: savedState.savedEntries || [],
+      groups: savedState.groups || CONSTANTS.DEFAULT_GROUPS,
+      timestamp: Date.now(),
+    };
+  }
+
   // ─── Tab Event Handlers ───────────────────────────────────────────────────────
 
   // LIFE-01: onCreated
@@ -155,6 +181,7 @@
     tabRegistry.set(tab.id, entry);
     pushToSidebar(MSG_TYPES.TAB_CREATED, { entry });
     console.log(`[TabNest FF] Tab created: ${tab.id}`);
+    StorageManager.scheduleSave(buildSessionState());
   });
 
   // LIFE-01: onUpdated
@@ -180,6 +207,7 @@
     tabRegistry.delete(tabId);
     pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
     console.log(`[TabNest FF] Tab removed: ${tabId}`);
+    StorageManager.scheduleSave(buildSessionState());
   });
 
   // LIFE-02: onActivated
@@ -255,6 +283,8 @@
         // Use defaults if storage read fails
       }
       await LifecycleManager.tick(tabRegistry, settings);
+      // SESS-01: Auto-save after lifecycle tick (stage transitions may have occurred)
+      StorageManager.scheduleSave(buildSessionState());
     }
   });
 
