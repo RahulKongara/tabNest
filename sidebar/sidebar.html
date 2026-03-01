@@ -22,7 +22,7 @@
   </header>
 
   <main id="tn-group-list" role="main" aria-label="Tab groups">
-    <!-- Group cards rendered here by sidebar.js -->
+    <!-- Group cards rendered here by the sidebar controller -->
   </main>
 
   <section id="tn-archive" class="tn-archive-section" aria-label="Archived tabs">
@@ -36,7 +36,7 @@
       <span id="tn-archive-count" class="tn-group-count"></span>
     </div>
     <ul id="tn-archive-list" class="tn-tab-list" role="list" hidden>
-      <!-- Archived tab entries rendered by sidebar.js -->
+      <!-- Archived tab entries rendered by the sidebar controller -->
     </ul>
   </section>
 
@@ -49,8 +49,8 @@
 
   <!-- Component scripts (loaded in dependency order) -->
   <script src="message-protocol.js"></script>
-  <!-- <script src="group-card.js"></script>   added in 02-04 -->
-  <!-- <script src="tab-entry.js"></script>    added in 02-04 -->
+  <script src="tab-entry.js"></script>
+  <script src="group-card.js"></script>
   <!-- <script src="ram-indicator.js"></script> added in 02-05 -->
   <script src="sidebar.js"></script>
 </body>
