@@ -12,7 +12,7 @@ TabNest is built in six phases that follow the natural dependency graph of a bro
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Extension scaffold, browser adapter, tab event tracking, activity timestamps, 30s alarm, lifecycle exception rules, and domain/keyword auto-grouping engine
+- [x] **Phase 1: Foundation** - Extension scaffold, browser adapter, tab event tracking, activity timestamps, 30s alarm, lifecycle exception rules, and domain/keyword auto-grouping engine
 - [ ] **Phase 2: Sidebar MVP** - Unified sidebar rendering all lifecycle stages in group cards with RAM indicator, session auto-save, startup reconciliation, and single-tab restore
 - [ ] **Phase 3: Full Lifecycle** - Stage 2 discard and Stage 4 archive transitions, user group management (create/rename/color/delete/merge), drag-and-drop with domain rule persistence, context menus, and search
 - [ ] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy)
@@ -36,9 +36,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01: Project scaffold — manifests (MV3 + MV2), file structure, build script skeleton, icons
 - [x] 01-02: Browser adapter + core constants — `browser-adapter.js`, `constants.js` (domain dictionary, keyword sets, default settings)
-- [ ] 01-03: Tab tracking + activity timestamps — `background.js` event listeners (onCreated, onUpdated, onRemoved, onActivated, onMoved), `lastActiveTimestamp` persistence every 60s
-- [ ] 01-04: Lifecycle alarm + exception rules — `lifecycle-manager.js` with 30s alarm, exception enforcement (pinned, audible, active, whitelisted, internal)
-- [ ] 01-05: Grouping engine — `grouping-engine.js` domain dictionary lookup, keyword heuristic scoring, "Other" fallback
+- [x] 01-03: Tab tracking + activity timestamps — `background.js` event listeners (onCreated, onUpdated, onRemoved, onActivated, onMoved), `lastActiveTimestamp` persistence every 60s
+- [x] 01-04: Lifecycle alarm + exception rules — `lifecycle-manager.js` with 30s alarm, exception enforcement (pinned, audible, active, whitelisted, internal)
+- [x] 01-05: Grouping engine — `grouping-engine.js` domain dictionary lookup, keyword heuristic scoring, "Other" fallback
 
 ### Phase 2: Sidebar MVP
 **Goal**: Users can open the sidebar and see all their tabs organized into context group cards, with lifecycle stage indicators, a RAM savings estimate, and a footer count — and the sidebar survives a browser restart with saved links intact
@@ -140,7 +140,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/5 | In progress | - |
+| 1. Foundation | 5/5 | Complete | 2026-03-01 |
 | 2. Sidebar MVP | 0/5 | Not started | - |
 | 3. Full Lifecycle | 0/5 | Not started | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |

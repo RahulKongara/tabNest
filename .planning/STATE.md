@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 2 of 5 in current phase
+Plan: 5 of 5 in current phase
 Status: In progress
-Last activity: 2026-03-01 — Plan 01-02 complete: browser adapter (BrowserAdapter) and constants (179-domain dict, 10 keyword sets, default groups/settings)
+Last activity: 2026-03-01 — Plan 01-05 complete: GroupingEngine 3-step classifier (user overrides → 179-entry domain dict → keyword heuristics) wired into both background.js and background-firefox.js
 
-Progress: [##░░░░░░░░] 8% (2/25 plans complete)
+Progress: [#####░░░░░] 20% (5/25 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~9 minutes
-- Total execution time: ~0.3 hours
+- Total plans completed: 5
+- Average duration: ~14 minutes
+- Total execution time: ~1.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2/5 | ~18m | ~9m |
+| 01-foundation | 5/5 | ~70m | ~14m |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~8m), 01-02 (~10m)
+- Last 5 plans: 01-01 (~8m), 01-02 (~10m), 01-03 (~18m), 01-04 (~14m), 01-05 (~20m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -53,6 +53,14 @@ Recent decisions affecting current work:
 - [01-02]: IIFE + globalThis export on browser-adapter.js — works in module (background), non-module (sidebar, content), and Node.js test contexts without a bundler
 - [01-02]: tabs.discard() feature-detected at load time via typeof — safe no-op on Firefox rather than build-time branching
 - [01-02]: DOMAIN_DICT keys use bare hostnames without www. prefix — callers must strip www. before lookup
+- [01-03]: importScripts() approach chosen over ES modules in background.js — avoids IIFE/module complexity with BrowserAdapter/CONSTANTS; type:module removed from manifest.json background field
+- [01-03]: tabRegistry exported via module.exports in Node.js test context — allows direct registry state verification in unit tests without integration harness
+- [01-03]: PERSIST_ALARM_NAME ('tabnest-persist-timestamps') separate from CONSTANTS.ALARM_NAME — timestamp persistence (60s) is independent of lifecycle tick (30s)
+- [01-03]: isInternalPage() treats null/empty URL as internal — prevents blank new-tab pages from entering lifecycle pipeline prematurely
+- [01-05]: userRulesCache loaded at initializeRegistry() and cached as module-level variable — avoids async storage reads in hot onCreated event path; Phase 5 must invalidate cache after rule save
+- [01-05]: Keyword tie-breaking resolves to 'other' — equal max scores across categories returns 'other', not an arbitrary winner; encourages explicit user override rules
+- [01-05]: GroupingEngine.classify() accepts rules as parameter, never reads storage — clean separation of concerns, synchronous, pure function
+- [01-05]: onUpdated URL-change re-classification added to both background files — tab navigations reassign groupId automatically
 
 ### Pending Todos
 
@@ -67,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Plan 01-02 complete — browser adapter (BrowserAdapter) and constants (179-domain DOMAIN_DICT, 10-category keyword sets, PRD-color DEFAULT_GROUPS) implemented
+Stopped at: Plan 01-05 complete — GroupingEngine 3-step classifier wired into background.js and background-firefox.js; Phase 1 (Foundation) fully complete
 Resume file: None
