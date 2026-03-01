@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T13:29:19.103Z"
+last_updated: "2026-03-01T13:43:17.977Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 9
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 ## Current Position
 
 Phase: 2 of 6 (Sidebar MVP)
-Plan: 4 of 5 in current phase
+Plan: 5 of 5 in current phase
 Status: In progress
-Last activity: 2026-03-01 — Plan 02-02 complete: Full chrome.runtime message protocol — 32 MSG_TYPES constants, 23-type onMessage dispatcher with GET_FULL_STATE/RESTORE_TAB fully implemented, runtime.connect push port for sidebar push messages
+Last activity: 2026-03-01 — Plan 02-04 complete: sidebar components (GroupCard, TabEntry) and sidebar.js controller with DocumentFragment rendering, 9-type push handler, event delegation
 
-Progress: [######░░░░] 28% (7/25 plans complete)
+Progress: [######░░░░] 32% (8/25 plans complete)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [######░░░░] 28% (7/25 plans complete)
 | 02-sidebar-mvp | P03 | 3m | 2 | 2 |
 | 02-sidebar-mvp | P01 | 3m | 2 | 4 |
 | 02-sidebar-mvp | P02 | 10m | 2 | 5 |
+| 02-sidebar-mvp | P04 | 3m | 2 | 4 |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - [02-02]: handleMessage is a named async function separate from onMessage listener — allows direct unit testing without mocking the message channel
 - [02-02]: RESTORE_TAB implemented fully (RESTORE-01) — mutates globalThis._savedState.savedEntries in place and persists via StorageManager.saveState
 - [02-02]: Phase-labelled stubs return { success: true, _stub: true } — sidebar action buttons won't break before Phase 3/5 wiring
+- [Phase 02-sidebar-mvp]: fullRender() called after every push update — DocumentFragment + innerHTML clear + single append fast enough for Phase 2; targeted DOM updates deferred to Phase 3/4
+- [Phase 02-sidebar-mvp]: sidebar.js uses chrome.* API directly — browser-adapter.js is background-only; no cross-browser abstraction needed in sidebar context
+- [Phase 02-sidebar-mvp]: Port reconnect uses setTimeout(connectToBackground, 1000) — handles MV3 service worker restart without losing sidebar session
 
 ### Pending Todos
 
@@ -111,5 +115,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-02-PLAN.md — Full message protocol: 32 MSG_TYPES constants in sidebar/message-protocol.js, onMessage handler dispatching all 23 types, runtime.connect push port for sidebar push messages
+Stopped at: Completed 02-04-PLAN.md — sidebar components (GroupCard, TabEntry) and sidebar.js controller with DocumentFragment rendering, 9-type push handler, event delegation for discard/close/restore actions
 Resume file: None

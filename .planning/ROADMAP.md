@@ -141,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
-| 2. Sidebar MVP | 2/5 | In progress | - |
+| 2. Sidebar MVP | 4/5 | In Progress|  |
 | 3. Full Lifecycle | 0/5 | Not started | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |
