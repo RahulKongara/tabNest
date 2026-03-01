@@ -17,7 +17,7 @@
  * XBROWSER-02: All API calls routed through BrowserAdapter.
  */
 
-/* global BrowserAdapter, CONSTANTS */
+/* global BrowserAdapter, CONSTANTS, LifecycleManager, GroupingEngine */
 
 (function () {
   'use strict';
@@ -25,6 +25,11 @@
   // In MV2 persistent background, tabRegistry survives between events.
   // The background page is always alive so Map state is stable.
   const tabRegistry = new Map();
+
+  // User rules cache — loaded from storage.sync on init and refreshed on settings change.
+  // Avoids async work in the hot onCreated event path.
+  // TODO(Phase 5): Settings panel must call refreshUserRulesCache() after saving new rules.
+  let userRulesCache = [];
 
   const PERSIST_ALARM_NAME = 'tabnest-persist-timestamps';
   const PERSIST_ALARM_PERIOD_MINUTES = 1;
@@ -45,7 +50,7 @@
       url,
       title:               tab.title || '',
       favicon:             tab.favIconUrl || '',
-      groupId:             'other',        // placeholder until GroupingEngine wires in (01-05)
+      groupId:             GroupingEngine.classify(url, tab.title || '', userRulesCache),
       stage:               CONSTANTS.STAGE.ACTIVE,
       lastActiveTimestamp: tab.active ? now : (now - 1000),
       createdAt:           now,
@@ -96,9 +101,25 @@
 
   // ─── Tab Registry Initialization ─────────────────────────────────────────────
 
+  /**
+   * Load user override rules from storage.sync into the module-level cache.
+   * Called during initializeRegistry() and when settings change (Phase 5).
+   */
+  async function refreshUserRulesCache() {
+    try {
+      const rulesData = await BrowserAdapter.storage.sync.get(CONSTANTS.STORAGE_KEYS.USER_RULES);
+      userRulesCache = rulesData[CONSTANTS.STORAGE_KEYS.USER_RULES] || [];
+    } catch {
+      userRulesCache = [];
+    }
+  }
+
   async function initializeRegistry() {
     tabRegistry.clear();
     const savedTimestamps = await loadSavedTimestamps();
+
+    // Load user rules for GroupingEngine classification
+    await refreshUserRulesCache();
     try {
       const allTabs = await BrowserAdapter.tabs.query({});
       for (const tab of allTabs) {
@@ -130,6 +151,11 @@
       return;
     }
     updateTabEntry(entry, tab);
+
+    // Re-classify if URL changed (user may navigate to a different context)
+    if (changeInfo.url) {
+      entry.groupId = GroupingEngine.classify(entry.url, entry.title, userRulesCache);
+    }
   });
 
   // LIFE-01: onRemoved

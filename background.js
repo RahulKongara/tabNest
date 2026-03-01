@@ -9,7 +9,8 @@
  *   - LIFE-01: Track all tab events (onCreated, onUpdated, onRemoved, onActivated,
  *              onMoved, onAttached, onDetached, onReplaced, onFocusChanged)
  *   - LIFE-02: Track lastActiveTimestamp per tab; persist to storage.local every 60s
- *   - LIFE-03, LIFE-07: Lifecycle alarm and exception rules (wired in 01-04)
+ *   - LIFE-03, LIFE-07: Lifecycle alarm and exception rules (via LifecycleManager)
+ *   - GROUP-01, GROUP-02: Auto-classify new tabs via GroupingEngine
  *   - XBROWSER-02: All API calls via BrowserAdapter
  *
  * Uses importScripts() (not ES modules) so BrowserAdapter and CONSTANTS are
@@ -35,6 +36,12 @@ if (typeof importScripts === 'function') {
 // Map<tabId: number, TabEntry>
 // Re-initialized from storage on every service worker wake (see initializeRegistry).
 const tabRegistry = new Map();
+globalThis._tabRegistry = tabRegistry; // exposed for LifecycleManager and debugging
+
+// User rules cache — loaded from storage.sync on init and refreshed on settings change.
+// Avoids async work in the hot onCreated event path.
+// TODO(Phase 5): Settings panel must call refreshUserRulesCache() after saving new rules.
+let userRulesCache = [];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,7 +70,7 @@ function createTabEntry(tab) {
     url,
     title:              tab.title || '',
     favicon:            tab.favIconUrl || '',
-    groupId:            'other',           // placeholder until GroupingEngine wires in (01-05)
+    groupId:            GroupingEngine.classify(url, tab.title || '', userRulesCache),
     stage:              CONSTANTS.STAGE.ACTIVE,
     lastActiveTimestamp: tab.active ? now : (now - 1000), // active tabs start fresh
     createdAt:          now,
@@ -132,6 +139,19 @@ async function loadSavedTimestamps() {
 }
 
 /**
+ * Load user override rules from storage.sync into the module-level cache.
+ * Called during initializeRegistry() and when settings change (Phase 5).
+ */
+async function refreshUserRulesCache() {
+  try {
+    const rulesData = await BrowserAdapter.storage.sync.get(CONSTANTS.STORAGE_KEYS.USER_RULES);
+    userRulesCache = rulesData[CONSTANTS.STORAGE_KEYS.USER_RULES] || [];
+  } catch {
+    userRulesCache = [];
+  }
+}
+
+/**
  * Initialize the tab registry by querying all currently open tabs.
  * Must be called on every service worker wake (onInstalled, onStartup, and
  * at the top of the script to handle mid-session wake-ups).
@@ -139,6 +159,9 @@ async function loadSavedTimestamps() {
 async function initializeRegistry() {
   tabRegistry.clear();
   const savedTimestamps = await loadSavedTimestamps();
+
+  // Load user rules for GroupingEngine classification
+  await refreshUserRulesCache();
 
   let allTabs;
   try {
@@ -178,7 +201,11 @@ BrowserAdapter.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     return;
   }
   updateTabEntry(entry, tab);
-  // Note: GroupingEngine.classify() will re-classify on URL change — wired in 01-05
+
+  // Re-classify if URL changed (user may navigate to a different context)
+  if (changeInfo.url) {
+    entry.groupId = GroupingEngine.classify(entry.url, entry.title, userRulesCache);
+  }
 });
 
 // LIFE-01: onRemoved — remove tab from registry
@@ -266,8 +293,17 @@ BrowserAdapter.alarms.onAlarm.addListener(async (alarm) => {
     return;
   }
   if (alarm.name === CONSTANTS.ALARM_NAME) {
-    // Lifecycle tick — LifecycleManager.tick() wired in 01-04
-    console.log('[TabNest] Lifecycle alarm tick', new Date().toISOString());
+    // Load current settings for this tick
+    let settings = CONSTANTS.DEFAULT_SETTINGS;
+    try {
+      const stored = await BrowserAdapter.storage.local.get(CONSTANTS.STORAGE_KEYS.SETTINGS);
+      if (stored[CONSTANTS.STORAGE_KEYS.SETTINGS]) {
+        settings = { ...CONSTANTS.DEFAULT_SETTINGS, ...stored[CONSTANTS.STORAGE_KEYS.SETTINGS] };
+      }
+    } catch {
+      // Use defaults if storage read fails
+    }
+    await LifecycleManager.tick(tabRegistry, settings);
   }
 });
 
@@ -323,5 +359,7 @@ if (typeof module !== 'undefined' && module.exports) {
     updateTabEntry,
     persistTimestamps,
     initializeRegistry,
+    refreshUserRulesCache,
+    get userRulesCache() { return userRulesCache; },
   };
 }
