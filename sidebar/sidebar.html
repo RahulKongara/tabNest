@@ -8,30 +8,50 @@
   <link rel="stylesheet" href="sidebar.css" />
 </head>
 <body>
-  <!-- Header -->
+
   <header id="tn-header" role="banner">
-    <span class="tn-logo">TabNest</span>
-    <input type="search" id="tn-search" placeholder="Search tabs..." aria-label="Search tabs" />
-    <span id="tn-ram-indicator" aria-label="RAM savings indicator"></span>
-    <button id="tn-settings-btn" aria-label="Open settings">&#9881;</button>
+    <div class="tn-header-top">
+      <span class="tn-logo" aria-label="TabNest">TabNest</span>
+      <span id="tn-ram-indicator" class="tn-ram-badge" aria-label="RAM savings" title="Estimated RAM savings"></span>
+      <button id="tn-settings-btn" class="tn-icon-btn" aria-label="Open settings" title="Settings">&#9881;</button>
+    </div>
+    <div class="tn-header-search">
+      <input type="search" id="tn-search" class="tn-search-input"
+             placeholder="Search tabs..." aria-label="Search tabs" autocomplete="off" />
+    </div>
   </header>
 
-  <!-- Group list -->
   <main id="tn-group-list" role="main" aria-label="Tab groups">
     <!-- Group cards rendered here by sidebar.js -->
   </main>
 
-  <!-- Archive section -->
-  <section id="tn-archive" aria-label="Archived tabs">
-    <!-- Archive entries rendered by sidebar.js -->
+  <section id="tn-archive" class="tn-archive-section" aria-label="Archived tabs">
+    <div class="tn-archive-header">
+      <button id="tn-archive-toggle" class="tn-collapse-btn"
+              aria-expanded="false" aria-controls="tn-archive-list"
+              aria-label="Toggle archived tabs">
+        &#128197; Archive
+        <span class="tn-collapse-icon">&#9654;</span>
+      </button>
+      <span id="tn-archive-count" class="tn-group-count"></span>
+    </div>
+    <ul id="tn-archive-list" class="tn-tab-list" role="list" hidden>
+      <!-- Archived tab entries rendered by sidebar.js -->
+    </ul>
   </section>
 
-  <!-- Footer -->
   <footer id="tn-footer" role="contentinfo">
-    <span id="tn-tab-count" aria-live="polite"></span>
-    <button id="tn-save-all-btn">Save &amp; Close All Inactive</button>
+    <span id="tn-tab-count" class="tn-tab-count" aria-live="polite" aria-atomic="true"></span>
+    <button id="tn-save-all-btn" class="tn-action-primary" aria-label="Save and close all inactive tabs">
+      Save &amp; Close Inactive
+    </button>
   </footer>
 
+  <!-- Component scripts (loaded in dependency order) -->
+  <script src="message-protocol.js"></script>
+  <!-- <script src="group-card.js"></script>   added in 02-04 -->
+  <!-- <script src="tab-entry.js"></script>    added in 02-04 -->
+  <!-- <script src="ram-indicator.js"></script> added in 02-05 -->
   <script src="sidebar.js"></script>
 </body>
 </html>
