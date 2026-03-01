@@ -115,6 +115,7 @@
       get onInstalled() { return _api.runtime.onInstalled; },
       get onStartup()   { return _api.runtime.onStartup; },
       get onSuspend()   { return _api.runtime.onSuspend; },
+      get onConnect()   { return _api.runtime.onConnect; },
       getURL(path) { return _api.runtime.getURL(path); },
     },
 

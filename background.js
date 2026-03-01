@@ -201,6 +201,7 @@ async function initializeRegistry() {
 BrowserAdapter.tabs.onCreated.addListener((tab) => {
   const entry = createTabEntry(tab);
   tabRegistry.set(tab.id, entry);
+  pushToSidebar(MSG_TYPES.TAB_CREATED, { entry });
   console.log(`[TabNest] Tab created: ${tab.id} — ${entry.url}`);
 });
 
@@ -218,11 +219,15 @@ BrowserAdapter.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url) {
     entry.groupId = GroupingEngine.classify(entry.url, entry.title, userRulesCache);
   }
+
+  const updatedEntry = tabRegistry.get(tabId);
+  if (updatedEntry) pushToSidebar(MSG_TYPES.TAB_UPDATED, { entry: updatedEntry });
 });
 
 // LIFE-01: onRemoved — remove tab from registry
 BrowserAdapter.tabs.onRemoved.addListener((tabId) => {
   tabRegistry.delete(tabId);
+  pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
   console.log(`[TabNest] Tab removed: ${tabId}`);
 });
 
@@ -318,6 +323,130 @@ BrowserAdapter.alarms.onAlarm.addListener(async (alarm) => {
     await LifecycleManager.tick(tabRegistry, settings);
   }
 });
+
+// ─── Sidebar Push Port ─────────────────────────────────────────────────────────
+// Sidebar connects via chrome.runtime.connect({ name: 'tabnest-sidebar' }) on load.
+// All background-initiated push messages go through this port.
+let sidebarPort = null;
+
+BrowserAdapter.runtime.onConnect.addListener((port) => {
+  if (port.name === 'tabnest-sidebar') {
+    sidebarPort = port;
+    port.onDisconnect.addListener(() => {
+      sidebarPort = null;
+    });
+  }
+});
+
+function pushToSidebar(type, data) {
+  if (sidebarPort) {
+    try {
+      sidebarPort.postMessage({ type, data });
+    } catch (err) {
+      // Port disconnected — clear reference
+      sidebarPort = null;
+    }
+  }
+}
+
+// ─── Message Handler (Sidebar → Background) ────────────────────────────────────
+BrowserAdapter.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender).then(sendResponse).catch((err) => {
+    sendResponse({ success: false, error: err.message || 'Unknown error' });
+  });
+  return true; // keep message channel open for async sendResponse
+});
+
+async function handleMessage(message, sender) {
+  const { type, data } = message || {};
+
+  switch (type) {
+
+    case MSG_TYPES.GET_FULL_STATE: {
+      const tabs = [...tabRegistry.values()].filter(e => !e.isInternal);
+      const savedState = globalThis._savedState || {};
+      const settings = await StorageManager.getSettings();
+      return {
+        success: true,
+        data: {
+          tabs,
+          savedEntries: savedState.savedEntries || [],
+          groups: savedState.groups || CONSTANTS.DEFAULT_GROUPS,
+          settings,
+        },
+      };
+    }
+
+    case MSG_TYPES.GET_SETTINGS: {
+      const settings = await StorageManager.getSettings();
+      return { success: true, data: { settings } };
+    }
+
+    case MSG_TYPES.SAVE_SETTINGS: {
+      await StorageManager.saveSettings(data.settings);
+      pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, { settings: data.settings });
+      return { success: true };
+    }
+
+    case MSG_TYPES.RESTORE_TAB: {
+      // RESTORE-01: Create new tab, remove saved entry from state
+      const { savedId } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      const entryIndex = (savedState.savedEntries || []).findIndex(e => e.savedId === savedId);
+      if (entryIndex === -1) return { success: false, error: 'Saved entry not found' };
+      const [savedEntry] = savedState.savedEntries.splice(entryIndex, 1);
+      // Persist updated state
+      await StorageManager.saveState(savedState);
+      // Open new tab
+      const newTab = await BrowserAdapter.tabs.create({ url: savedEntry.url });
+      pushToSidebar(MSG_TYPES.TAB_RESTORED, { savedId, newTabId: newTab.id });
+      return { success: true, data: { newTabId: newTab.id } };
+    }
+
+    case MSG_TYPES.DISCARD_TAB: {
+      const { tabId } = data || {};
+      await BrowserAdapter.tabs.discard(tabId);
+      return { success: true };
+    }
+
+    case MSG_TYPES.MOVE_TO_GROUP: {
+      const { tabId, groupId } = data || {};
+      const entry = tabRegistry.get(tabId);
+      if (entry) {
+        entry.groupId = groupId;
+        pushToSidebar(MSG_TYPES.TAB_UPDATED, { entry });
+      }
+      return { success: true };
+    }
+
+    // ── Phase 3 stubs ─────────────────────────────────────────────────────
+    case MSG_TYPES.SAVE_AND_CLOSE_TAB:
+    case MSG_TYPES.SAVE_ALL_INACTIVE:
+    case MSG_TYPES.DISCARD_ALL_INACTIVE:
+    case MSG_TYPES.CREATE_GROUP:
+    case MSG_TYPES.RENAME_GROUP:
+    case MSG_TYPES.SET_GROUP_COLOR:
+    case MSG_TYPES.DELETE_GROUP:
+    case MSG_TYPES.MERGE_GROUPS:
+    case MSG_TYPES.ARCHIVE_GROUP:
+      return { success: true, _stub: true };
+
+    // ── Phase 5 stubs ─────────────────────────────────────────────────────
+    case MSG_TYPES.RESTORE_WORKSPACE:
+    case MSG_TYPES.SAVE_WORKSPACE:
+    case MSG_TYPES.LIST_WORKSPACES:
+      return { success: true, data: [], _stub: true };
+    case MSG_TYPES.DELETE_WORKSPACE:
+    case MSG_TYPES.EXPORT_DATA:
+    case MSG_TYPES.IMPORT_DATA:
+    case MSG_TYPES.CLEAR_DATA:
+    case MSG_TYPES.OPEN_SETTINGS_PANEL:
+      return { success: true, _stub: true };
+
+    default:
+      return { success: false, error: `Unknown message type: ${type}` };
+  }
+}
 
 // ─── Startup and Installation ──────────────────────────────────────────────────
 
