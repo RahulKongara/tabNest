@@ -71,14 +71,14 @@ Plans:
   4. User can double-click a group name to rename it, open a color picker to change its color (12 presets + custom hex), and right-click to access merge, delete, and archive group actions
   5. Dragging a tab entry from one group and dropping it into another moves the entry persistently, and creates a domain-level user override rule that applies to future tabs from that domain
   6. The search input filters all entries (active, saved, archived) by title, URL, and group name in real-time, completing within 100ms for 200 entries
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Stage 2 discard transition — wire `lifecycle-manager.js` LIFE-04 path, `TAB_DISCARDED` push, retry logic on failure
-- [ ] 03-02: Stage 3 save-and-close transition — LIFE-05 snapshot capture, tab close, `TAB_SAVED_AND_CLOSED` push; Stage 4 archive timer (LIFE-06), `TAB_ARCHIVED` push, archive section UI (UI-07)
-- [ ] 03-03: Group management UI — GROUP-03 user override rules in sync storage; GROUP-04 create/rename/color/delete/merge/archive via sidebar (UI-10 color picker, double-click rename)
-- [ ] 03-04: Drag-and-drop + context menus — UI-05 drag reorder with domain rule creation, UI-09 right-click context menus on tab entries and group headers
-- [ ] 03-05: Search and filter — UI-04 real-time search across all lifecycle stages, under 100ms for 200 entries (`search-bar.js`)
+- [ ] 03-01-PLAN.md — Stage 2 discard transition: extend lifecycle-manager.js tick() with pushCallback, TAB_DISCARDED push, retry on failure (LIFE-04)
+- [ ] 03-02-PLAN.md — Stage 3 save-and-close + Stage 4 archive: saveAndCloseTab() helper, LIFE-05 snapshot/close/push, LIFE-06 archive timer loop, TAB_ARCHIVED push, UI-07 archive section
+- [ ] 03-03-PLAN.md — Group management: color-picker.js (UI-10), double-click rename, CREATE/RENAME/COLOR/DELETE/MERGE/ARCHIVE handlers, GROUP-03 domain rules in storage.sync (GROUP-04)
+- [ ] 03-04-PLAN.md — Drag-and-drop + context menus: draggable tab entries, drop on group cards, domain rule persistence on first drag (UI-05), right-click context menus (UI-09)
+- [ ] 03-05-PLAN.md — Search and filter: search-bar.js, real-time filter by title/URL/group name, result count, under 100ms for 200 entries (UI-04)
 
 ### Phase 4: Intelligence Layer
 **Goal**: The extension detects when a URL may lose state on restore and warns the user, captures each tab's navigation history before closing it, blocks lifecycle transitions for tabs with unsaved form data, and pre-warms tabs so restore feels instant
@@ -142,7 +142,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
 | 2. Sidebar MVP | 5/5 | Complete   | 2026-03-01 |
-| 3. Full Lifecycle | 0/5 | Not started | - |
+| 3. Full Lifecycle | 0/5 | Planned    | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |
 | 6. Cross-Browser | 0/3 | Not started | - |
