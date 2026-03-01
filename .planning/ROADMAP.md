@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Project scaffold — manifests (MV3 + MV2), file structure, build script skeleton, icons
-- [ ] 01-02: Browser adapter + core constants — `browser-adapter.js`, `constants.js` (domain dictionary, keyword sets, default settings)
+- [x] 01-02: Browser adapter + core constants — `browser-adapter.js`, `constants.js` (domain dictionary, keyword sets, default settings)
 - [ ] 01-03: Tab tracking + activity timestamps — `background.js` event listeners (onCreated, onUpdated, onRemoved, onActivated, onMoved), `lastActiveTimestamp` persistence every 60s
 - [ ] 01-04: Lifecycle alarm + exception rules — `lifecycle-manager.js` with 30s alarm, exception enforcement (pinned, audible, active, whitelisted, internal)
 - [ ] 01-05: Grouping engine — `grouping-engine.js` domain dictionary lookup, keyword heuristic scoring, "Other" fallback
@@ -140,7 +140,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/5 | Not started | - |
+| 1. Foundation | 2/5 | In progress | - |
 | 2. Sidebar MVP | 0/5 | Not started | - |
 | 3. Full Lifecycle | 0/5 | Not started | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |
