@@ -51,14 +51,14 @@ Plans:
   4. Clicking a saved link in the sidebar opens a new tab to that URL and removes the saved entry from the sidebar
   5. After a browser restart, the sidebar repopulates saved links and group structure from the last saved state within the first alarm tick
   6. The sidebar renders fully in under 200ms with 200 total entries (p95)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: Storage manager — `storage-manager.js` (read/write to sync + local, 30s debounced autosave, schema definitions)
-- [ ] 02-02: Message protocol — define all 23 Sidebar→Background request types and 9 Background→Sidebar push types; wire up `chrome.runtime` messaging in background.js
-- [ ] 02-03: Sidebar HTML/CSS skeleton — `sidebar.html`, `sidebar.css`, responsive layout (300px–500px), group card structure, tab entry structure
-- [ ] 02-04: Sidebar controller + group-card/tab-entry components — `sidebar.js`, `group-card.js`, `tab-entry.js`, lazy/virtualized rendering, initial render under 200ms
-- [ ] 02-05: RAM indicator + footer + single restore — `ram-indicator.js`, footer count, RESTORE-01 click-to-restore, SESS-01 autosave triggers, SESS-02 startup reconciliation
+- [ ] 02-01-PLAN.md — StorageManager: read/write to sync + local, 30s debounced autosave, schema definitions, SESS-01/SESS-02
+- [ ] 02-02-PLAN.md — Message protocol: 32 message type constants, chrome.runtime.onMessage handler, push port for real-time sidebar updates
+- [ ] 02-03-PLAN.md — Sidebar HTML/CSS: sidebar.html semantic structure, sidebar.css responsive layout (300–500px), group card and tab entry component styles
+- [ ] 02-04-PLAN.md — Sidebar controller + components: sidebar.js controller, group-card.js, tab-entry.js, DocumentFragment rendering, push message handling
+- [ ] 02-05-PLAN.md — RAM indicator + footer + restore: ram-indicator.js (UI-06), footer count (UI-08), RESTORE-01 restore flow, SESS-01 scheduleSave triggers, SESS-02 startup reconciliation
 
 ### Phase 3: Full Lifecycle
 **Goal**: All four lifecycle stages function end-to-end — idle tabs are automatically discarded (Stage 2) then saved and closed (Stage 3), long-idle saved links move to the archive (Stage 4), and users can fully manage groups and reassign tabs via drag-and-drop and context menus
