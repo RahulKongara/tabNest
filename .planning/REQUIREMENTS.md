@@ -28,8 +28,8 @@
 ### Sidebar UI
 
 - [ ] **UI-01**: Sidebar displays a unified view of all lifecycle stages (active, discarded, saved, archived) blended within group cards
-- [ ] **UI-02**: Each group card shows: color bar, group name (editable on double-click), stage count badge (e.g., "3 open · 8 saved"), expand/collapse toggle
-- [ ] **UI-03**: Each tab entry shows: favicon, truncated title (full on hover), domain, lifecycle stage indicator (green dot / blue dot / bookmark / clock), stateful URL ⚠️ badge, action icons
+- [x] **UI-02**: Each group card shows: color bar, group name (editable on double-click), stage count badge (e.g., "3 open · 8 saved"), expand/collapse toggle
+- [x] **UI-03**: Each tab entry shows: favicon, truncated title (full on hover), domain, lifecycle stage indicator (green dot / blue dot / bookmark / clock), stateful URL ⚠️ badge, action icons
 - [ ] **UI-04**: Search input filters all entries (active + saved + archived) by title, URL, and group name in real-time (< 100ms for 200 entries)
 - [ ] **UI-05**: Drag-and-drop moves tab entries between groups; first drag for a domain creates a persistent user rule
 - [ ] **UI-06**: RAM savings indicator in header (Stage 2 × 150MB + Stage 3/4 × 200MB), updates in real-time
@@ -37,7 +37,7 @@
 - [ ] **UI-08**: Footer shows total breakdown ("47 tabs: 5 active · 8 discarded · 27 saved · 7 archived") and "Save & Close All Inactive" button
 - [ ] **UI-09**: Right-click context menu on tab entries and group headers with full action set
 - [ ] **UI-10**: Group color picker: 12 preset colors + custom hex input
-- [ ] **UI-11**: Sidebar renders fully in < 200ms (p95) with 200 total entries
+- [x] **UI-11**: Sidebar renders fully in < 200ms (p95) with 200 total entries
 - [ ] **UI-12**: Full keyboard navigation (Tab, Enter, Escape, Arrow keys) and ARIA labels on all interactive elements (WCAG 2.1 AA)
 
 ### Smart Restore
@@ -124,8 +124,8 @@
 | GROUP-03 | Phase 3 | Pending |
 | GROUP-04 | Phase 3 | Pending |
 | UI-01 | Phase 2 | Pending |
-| UI-02 | Phase 2 | Pending |
-| UI-03 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Complete |
+| UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 3 | Pending |
 | UI-05 | Phase 3 | Pending |
 | UI-06 | Phase 2 | Pending |
@@ -133,7 +133,7 @@
 | UI-08 | Phase 2 | Pending |
 | UI-09 | Phase 3 | Pending |
 | UI-10 | Phase 3 | Pending |
-| UI-11 | Phase 2 | Pending |
+| UI-11 | Phase 2 | Complete |
 | UI-12 | Phase 5 | Pending |
 | RESTORE-01 | Phase 2 | Pending |
 | RESTORE-02 | Phase 4 | Pending |
