@@ -11,11 +11,11 @@
 
 - [ ] **LIFE-01**: System tracks all open tabs in real-time (onCreated, onUpdated, onRemoved, onActivated, onMoved events)
 - [ ] **LIFE-02**: System tracks `lastActiveTimestamp` per tab and persists it every 60 seconds
-- [ ] **LIFE-03**: A 30-second repeating alarm evaluates all tabs for lifecycle transitions (Stage 1→2→3→4)
+- [x] **LIFE-03**: A 30-second repeating alarm evaluates all tabs for lifecycle transitions (Stage 1→2→3→4)
 - [ ] **LIFE-04**: System transitions idle tabs to Stage 2 (Discarded) via `tabs.discard()` after T1 (default 5 min)
 - [ ] **LIFE-05**: System transitions idle tabs to Stage 3 (Saved & Closed) after T2 (default 15 min) — captures snapshot, closes tab
 - [ ] **LIFE-06**: System transitions Stage 3 entries to Stage 4 (Archived) after T3 (default 7 days)
-- [ ] **LIFE-07**: System enforces lifecycle exceptions: pinned tabs (max Stage 2), audible tabs (stay Stage 1), whitelisted domains (max Stage 2), active form input (stay Stage 1), browser-internal pages (never managed), currently active tab (always Stage 1)
+- [x] **LIFE-07**: System enforces lifecycle exceptions: pinned tabs (max Stage 2), audible tabs (stay Stage 1), whitelisted domains (max Stage 2), active form input (stay Stage 1), browser-internal pages (never managed), currently active tab (always Stage 1)
 - [ ] **LIFE-08**: On browsers without `tabs.discard()`, Stage 2 is skipped — T1 timer extends to T2 value and tabs move directly to Stage 3
 
 ### Auto-Grouping
@@ -113,11 +113,11 @@
 |-------------|-------|--------|
 | LIFE-01 | Phase 1 | Pending |
 | LIFE-02 | Phase 1 | Pending |
-| LIFE-03 | Phase 1 | Pending |
+| LIFE-03 | Phase 1 | Complete |
 | LIFE-04 | Phase 3 | Pending |
 | LIFE-05 | Phase 3 | Pending |
 | LIFE-06 | Phase 3 | Pending |
-| LIFE-07 | Phase 1 | Pending |
+| LIFE-07 | Phase 1 | Complete |
 | LIFE-08 | Phase 6 | Pending |
 | GROUP-01 | Phase 1 | Complete |
 | GROUP-02 | Phase 1 | Complete |
