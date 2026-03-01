@@ -28,7 +28,8 @@ if (typeof importScripts === 'function') {
     'core/constants.js',
     'core/lifecycle-manager.js',
     'core/grouping-engine.js',
-    'core/storage-manager.js'
+    'core/storage-manager.js',
+    'sidebar/message-protocol.js'
   );
 }
 

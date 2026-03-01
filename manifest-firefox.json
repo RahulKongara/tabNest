@@ -18,6 +18,7 @@
       "core/lifecycle-manager.js",
       "core/grouping-engine.js",
       "core/storage-manager.js",
+      "sidebar/message-protocol.js",
       "background-firefox.js"
     ],
     "persistent": true
