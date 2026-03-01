@@ -54,9 +54,9 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — StorageManager: read/write to sync + local, 30s debounced autosave, schema definitions, SESS-01/SESS-02
+- [x] 02-01-PLAN.md — StorageManager: read/write to sync + local, 30s debounced autosave, schema definitions, SESS-01/SESS-02
 - [ ] 02-02-PLAN.md — Message protocol: 32 message type constants, chrome.runtime.onMessage handler, push port for real-time sidebar updates
-- [ ] 02-03-PLAN.md — Sidebar HTML/CSS: sidebar.html semantic structure, sidebar.css responsive layout (300–500px), group card and tab entry component styles
+- [x] 02-03-PLAN.md — Sidebar HTML/CSS: sidebar.html semantic structure, sidebar.css responsive layout (300–500px), group card and tab entry component styles
 - [ ] 02-04-PLAN.md — Sidebar controller + components: sidebar.js controller, group-card.js, tab-entry.js, DocumentFragment rendering, push message handling
 - [ ] 02-05-PLAN.md — RAM indicator + footer + restore: ram-indicator.js (UI-06), footer count (UI-08), RESTORE-01 restore flow, SESS-01 scheduleSave triggers, SESS-02 startup reconciliation
 
@@ -141,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
-| 2. Sidebar MVP | 0/5 | Not started | - |
+| 2. Sidebar MVP | 2/5 | In progress | - |
 | 3. Full Lifecycle | 0/5 | Not started | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |

@@ -87,6 +87,10 @@ Recent decisions affecting current work:
 - [Phase 02-sidebar-mvp]: CSS data-collapsed attribute drives collapse state — no inline styles; JS sets data-collapsed=true/false
 - [Phase 02-sidebar-mvp]: CSS data-stage attribute (active/discarded/saved/archived) drives stage indicator appearance — decouples JS from visual logic
 - [Phase 02-sidebar-mvp]: --group-color CSS custom property on .tn-group-card drives border-left and color bar — JS sets style attribute once per card
+- [02-01]: StorageManager.scheduleSave() uses clearTimeout/setTimeout (not alarms) — sidebar context has window timers; background uses alarm-based triggering independently
+- [02-01]: saveState() stamps state.timestamp = Date.now() before writing — callers don't manage timestamps
+- [02-01]: getSettings() spread { ...DEFAULT_SETTINGS, ...stored } — stored values override defaults, missing fields always get defaults
+- [02-01]: globalThis._savedState set in initializeRegistry() — avoids extra storage read in GET_FULL_STATE handler; reconciliation logic in 02-05
 
 ### Pending Todos
 
@@ -101,5 +105,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-03-PLAN.md — sidebar.html complete semantic structure and sidebar.css full responsive styles; DOM contract frozen for 02-04 through 02-07
+Stopped at: Completed 02-01-PLAN.md — StorageManager with 30s debounced save (SESS-01) and startup session restore hook (SESS-02) wired into background.js and background-firefox.js
 Resume file: None

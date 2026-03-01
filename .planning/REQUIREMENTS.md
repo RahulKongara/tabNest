@@ -49,8 +49,8 @@
 
 ### Session Persistence
 
-- [ ] **SESS-01**: Full session state (groups, active tabs, saved links, archived entries, settings) auto-saves to `storage.local` every 30 seconds (debounced) and on every lifecycle/group change event
-- [ ] **SESS-02**: On browser startup, system reconciles open tabs with last saved state, rebuilds groups, and restores saved links to sidebar
+- [x] **SESS-01**: Full session state (groups, active tabs, saved links, archived entries, settings) auto-saves to `storage.local` every 30 seconds (debounced) and on every lifecycle/group change event
+- [x] **SESS-02**: On browser startup, system reconciles open tabs with last saved state, rebuilds groups, and restores saved links to sidebar
 - [ ] **SESS-03**: User can save and restore named workspace snapshots (max 20); restore uses staggered batch restore
 
 ### Stateful URL & History
@@ -139,8 +139,8 @@
 | RESTORE-02 | Phase 4 | Pending |
 | RESTORE-03 | Phase 4 | Pending |
 | RESTORE-04 | Phase 4 | Pending |
-| SESS-01 | Phase 2 | Pending |
-| SESS-02 | Phase 2 | Pending |
+| SESS-01 | Phase 2 | Complete |
+| SESS-02 | Phase 2 | Complete |
 | SESS-03 | Phase 5 | Pending |
 | DATA-01 | Phase 4 | Pending |
 | DATA-02 | Phase 4 | Pending |
