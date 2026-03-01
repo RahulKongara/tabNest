@@ -1,0 +1,45 @@
+/* TabNest Sidebar Styles — Stub
+ * Full implementation: Phase 2, plan 02-03
+ * Responsive: 300px–500px width (browser-controlled)
+ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  background: #fff;
+  color: #333;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Placeholder layout — full styling in Phase 2 */
+#tn-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+#tn-group-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#tn-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-top: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}

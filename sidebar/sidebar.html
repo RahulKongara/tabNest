@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; object-src 'self'" />
+  <title>TabNest</title>
+  <link rel="stylesheet" href="sidebar.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header id="tn-header" role="banner">
+    <span class="tn-logo">TabNest</span>
+    <input type="search" id="tn-search" placeholder="Search tabs..." aria-label="Search tabs" />
+    <span id="tn-ram-indicator" aria-label="RAM savings indicator"></span>
+    <button id="tn-settings-btn" aria-label="Open settings">&#9881;</button>
+  </header>
+
+  <!-- Group list -->
+  <main id="tn-group-list" role="main" aria-label="Tab groups">
+    <!-- Group cards rendered here by sidebar.js -->
+  </main>
+
+  <!-- Archive section -->
+  <section id="tn-archive" aria-label="Archived tabs">
+    <!-- Archive entries rendered by sidebar.js -->
+  </section>
+
+  <!-- Footer -->
+  <footer id="tn-footer" role="contentinfo">
+    <span id="tn-tab-count" aria-live="polite"></span>
+    <button id="tn-save-all-btn">Save &amp; Close All Inactive</button>
+  </footer>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>
