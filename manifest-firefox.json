@@ -12,7 +12,14 @@
     "<all_urls>"
   ],
   "background": {
-    "scripts": ["background-firefox.js"],
+    "scripts": [
+      "core/browser-adapter.js",
+      "core/constants.js",
+      "core/lifecycle-manager.js",
+      "core/grouping-engine.js",
+      "core/storage-manager.js",
+      "background-firefox.js"
+    ],
     "persistent": true
   },
   "sidebar_action": {
