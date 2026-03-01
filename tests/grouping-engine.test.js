@@ -188,11 +188,10 @@ assertEqual(
 // ─── Tie-breaking ─────────────────────────────────────────────────────────────
 console.log('\nTie-breaking (tied scores → other)');
 
-// "review" appears in both shopping and lifestyle keyword sets
-// "health" appears in both news and lifestyle
-// Find a URL that scores equally for two categories
+// "analysis" appears in both research and news keyword sets
+// A URL with only that word as keyword match scores 1 for both → tie → 'other'
 assertEqual(
-  GE.classify('https://unknown.example.com/review/health', 'Health Review', []),
+  GE.classify('https://unknown.example.com/analysis', 'Analysis', []),
   'other',
   'Keywords matching multiple categories equally → other (tie)'
 );
