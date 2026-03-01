@@ -121,6 +121,7 @@
     renderGroups(tabs, savedEntries, groups);
     renderArchive(savedEntries);
     updateFooterCount(tabs, savedEntries);
+    RamIndicator.update(tabs, savedEntries);
   }
 
   // ── Push message handler ───────────────────────────────────────────────────
