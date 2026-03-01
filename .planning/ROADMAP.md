@@ -13,7 +13,7 @@ TabNest is built in six phases that follow the natural dependency graph of a bro
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Extension scaffold, browser adapter, tab event tracking, activity timestamps, 30s alarm, lifecycle exception rules, and domain/keyword auto-grouping engine
-- [ ] **Phase 2: Sidebar MVP** - Unified sidebar rendering all lifecycle stages in group cards with RAM indicator, session auto-save, startup reconciliation, and single-tab restore
+- [x] **Phase 2: Sidebar MVP** - Unified sidebar rendering all lifecycle stages in group cards with RAM indicator, session auto-save, startup reconciliation, and single-tab restore (completed 2026-03-01)
 - [ ] **Phase 3: Full Lifecycle** - Stage 2 discard and Stage 4 archive transitions, user group management (create/rename/color/delete/merge), drag-and-drop with domain rule persistence, context menus, and search
 - [ ] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy)
 - [ ] **Phase 5: Settings, Shortcuts, and Workspaces** - Full settings panel, configurable keyboard shortcuts, export/import/clear data, named workspace snapshots, and WCAG 2.1 AA keyboard accessibility
@@ -141,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
-| 2. Sidebar MVP | 4/5 | In Progress|  |
+| 2. Sidebar MVP | 5/5 | Complete   | 2026-03-01 |
 | 3. Full Lifecycle | 0/5 | Not started | - |
 | 4. Intelligence Layer | 0/4 | Not started | - |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |

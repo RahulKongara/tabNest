@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T13:43:17.977Z"
+last_updated: "2026-03-01T18:04:26.824Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 
 ## Current Position
 
-Phase: 2 of 6 (Sidebar MVP)
-Plan: 5 of 5 in current phase
-Status: In progress
-Last activity: 2026-03-01 — Plan 02-04 complete: sidebar components (GroupCard, TabEntry) and sidebar.js controller with DocumentFragment rendering, 9-type push handler, event delegation
+Phase: 2 of 6 (Sidebar MVP) — COMPLETE
+Plan: 5 of 5 in current phase — COMPLETE
+Status: Phase 2 complete
+Last activity: 2026-03-01 — Plan 02-05 complete: RamIndicator wired into sidebar, SESS-01 auto-save triggers, SESS-02 startup reconciliation. Phase 2 all 5 plans done.
 
-Progress: [######░░░░] 32% (8/25 plans complete)
+Progress: [########░░] 40% (10/25 plans complete)
 
 ## Performance Metrics
 
@@ -41,7 +41,7 @@ Progress: [######░░░░] 32% (8/25 plans complete)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 5/5 | ~70m | ~14m |
-| 02-sidebar-mvp | 2/5 | ~6m | ~3m |
+| 02-sidebar-mvp | 5/5 | ~24m | ~5m |
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (~8m), 01-02 (~10m), 01-03 (~18m), 01-04 (~14m), 01-05 (~20m), 02-01 (~3m), 02-03 (~3m)
@@ -56,6 +56,7 @@ Progress: [######░░░░] 32% (8/25 plans complete)
 | 02-sidebar-mvp | P01 | 3m | 2 | 4 |
 | 02-sidebar-mvp | P02 | 10m | 2 | 5 |
 | 02-sidebar-mvp | P04 | 3m | 2 | 4 |
+| 02-sidebar-mvp | P05 | 5m | 2 | 5 |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase 02-sidebar-mvp]: fullRender() called after every push update — DocumentFragment + innerHTML clear + single append fast enough for Phase 2; targeted DOM updates deferred to Phase 3/4
 - [Phase 02-sidebar-mvp]: sidebar.js uses chrome.* API directly — browser-adapter.js is background-only; no cross-browser abstraction needed in sidebar context
 - [Phase 02-sidebar-mvp]: Port reconnect uses setTimeout(connectToBackground, 1000) — handles MV3 service worker restart without losing sidebar session
+- [Phase 02-sidebar-mvp]: RamIndicator.update() called from fullRender() ensures badge updates on every push without explicit invocations
+- [Phase 02-sidebar-mvp]: buildSessionState() reads from globalThis._savedState as single source of truth; no extra storage reads in event handlers
+- [Phase 02-sidebar-mvp]: SESS-02 normalization uses Array.isArray guards on savedEntries and groups — handles null/corrupted session data gracefully on fresh install
 
 ### Pending Todos
 
@@ -115,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-04-PLAN.md — sidebar components (GroupCard, TabEntry) and sidebar.js controller with DocumentFragment rendering, 9-type push handler, event delegation for discard/close/restore actions
+Stopped at: Completed 02-05-PLAN.md — RAM indicator, SESS-01 auto-save triggers (onCreated/onRemoved/alarm), SESS-02 startup reconciliation. Phase 2 Sidebar MVP complete.
 Resume file: None
