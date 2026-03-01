@@ -25,6 +25,7 @@
   // In MV2 persistent background, tabRegistry survives between events.
   // The background page is always alive so Map state is stable.
   const tabRegistry = new Map();
+  globalThis._tabRegistry = tabRegistry; // exposed for LifecycleManager and debugging
 
   // User rules cache — loaded from storage.sync on init and refreshed on settings change.
   // Avoids async work in the hot onCreated event path.
@@ -226,8 +227,17 @@
       return;
     }
     if (alarm.name === CONSTANTS.ALARM_NAME) {
-      // Lifecycle tick — LifecycleManager.tick() wired in 01-04
-      console.log('[TabNest FF] Lifecycle alarm tick', new Date().toISOString());
+      // Load current settings for this tick
+      let settings = CONSTANTS.DEFAULT_SETTINGS;
+      try {
+        const stored = await BrowserAdapter.storage.local.get(CONSTANTS.STORAGE_KEYS.SETTINGS);
+        if (stored[CONSTANTS.STORAGE_KEYS.SETTINGS]) {
+          settings = { ...CONSTANTS.DEFAULT_SETTINGS, ...stored[CONSTANTS.STORAGE_KEYS.SETTINGS] };
+        }
+      } catch {
+        // Use defaults if storage read fails
+      }
+      await LifecycleManager.tick(tabRegistry, settings);
     }
   });
 
