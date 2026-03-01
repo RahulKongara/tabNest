@@ -160,6 +160,17 @@ async function initializeRegistry() {
   tabRegistry.clear();
   const savedTimestamps = await loadSavedTimestamps();
 
+  // Load last saved session state (SESS-02: startup reconciliation)
+  // Stored on globalThis so the GET_FULL_STATE message handler (wired in 02-02)
+  // can return savedEntries and groups to the sidebar without re-reading storage.
+  let savedState = null;
+  try {
+    savedState = await StorageManager.loadState();
+  } catch {
+    savedState = null;
+  }
+  globalThis._savedState = savedState;
+
   // Load user rules for GroupingEngine classification
   await refreshUserRulesCache();
 
