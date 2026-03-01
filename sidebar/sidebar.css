@@ -1,7 +1,66 @@
-/* TabNest Sidebar Styles — Stub
- * Full implementation: Phase 2, plan 02-03
+/* TabNest Sidebar Styles
+ * Phase 2, Plan 02-03 — Complete implementation
  * Responsive: 300px–500px width (browser-controlled)
+ * Performance: no box-shadow on per-tab-entry, transition only specific props
  */
+
+/* ===========================
+   1. CSS Custom Properties
+   =========================== */
+
+:root {
+  /* Sidebar sizing */
+  --sidebar-min-width: 300px;
+  --sidebar-max-width: 500px;
+
+  /* Spacing tokens */
+  --space-xs: 4px;
+  --space-sm: 6px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+
+  /* Typography tokens */
+  --font-size-base: 13px;
+  --font-size-sm: 11px;
+  --font-size-xs: 10px;
+
+  /* Color tokens */
+  --color-bg: #fff;
+  --color-surface: #f8f9fa;
+  --color-border: #e5e5e5;
+  --color-text: #333;
+  --color-text-muted: #888;
+  --color-primary: #1B6B93;
+  --color-primary-hover: #155a7d;
+
+  /* Stage indicator colors */
+  --stage-active-color: #27AE60;
+  --stage-discarded-color: #2196F3;
+
+  /* Group color palette — 10 categories */
+  --group-color-dev: #1B6B93;
+  --group-color-work: #E67E22;
+  --group-color-social: #E91E8C;
+  --group-color-shopping: #27AE60;
+  --group-color-entertainment: #8E44AD;
+  --group-color-news: #E74C3C;
+  --group-color-research: #00ACC1;
+  --group-color-finance: #F39C12;
+  --group-color-lifestyle: #009688;
+  --group-color-other: #95A5A6;
+
+  /* Header/footer heights */
+  --header-height: 72px;
+  --footer-height: 44px;
+
+  /* Transition */
+  --transition-fast: 0.15s ease;
+}
+
+/* ===========================
+   2. Reset & Base
+   =========================== */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -10,36 +69,535 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
-  background: #fff;
-  color: #333;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-width: var(--sidebar-min-width);
+  max-width: var(--sidebar-max-width);
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Placeholder layout — full styling in Phase 2 */
+/* ===========================
+   3. Header
+   =========================== */
+
 #tn-header {
+  flex-shrink: 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.tn-header-top {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid #e5e5e5;
-  flex-shrink: 0;
+  gap: var(--space-sm);
 }
+
+.tn-logo {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* RAM savings badge */
+.tn-ram-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: 10px;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Empty badge hides gracefully */
+.tn-ram-badge:empty {
+  display: none;
+}
+
+.tn-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: 4px;
+  font-size: 16px;
+  color: var(--color-text-muted);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.tn-icon-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.tn-icon-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.tn-header-search {
+  display: flex;
+}
+
+.tn-search-input {
+  width: 100%;
+  padding: 5px var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.tn-search-input:focus {
+  border-color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+/* ===========================
+   4. Main Group List
+   =========================== */
 
 #tn-group-list {
   flex: 1;
   overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
+/* Scrollbar styling — subtle */
+#tn-group-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+#tn-group-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+/* ===========================
+   5. Group Card
+   =========================== */
+
+.tn-group-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--group-color, #95A5A6);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Collapse state — hide tab list when data-collapsed="true" */
+.tn-group-card[data-collapsed="true"] .tn-tab-list {
+  display: none;
+}
+
+.tn-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  user-select: none;
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.tn-group-header:hover {
+  background: #f0f0f0;
+}
+
+.tn-group-color-bar {
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  background-color: var(--group-color, #95A5A6);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tn-group-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.tn-group-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tn-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px var(--space-xs);
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tn-collapse-btn:hover {
+  color: var(--color-text);
+}
+
+.tn-collapse-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.tn-collapse-icon {
+  display: inline-block;
+  font-size: 9px;
+  transition: transform var(--transition-fast);
+}
+
+/* Rotate arrow when expanded */
+.tn-group-card[data-collapsed="false"] .tn-collapse-icon,
+.tn-group-card:not([data-collapsed]) .tn-collapse-icon {
+  transform: rotate(90deg);
+}
+
+/* ===========================
+   6. Tab List
+   =========================== */
+
+.tn-tab-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ===========================
+   7. Tab Entry
+   =========================== */
+
+.tn-tab-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 5px var(--space-md);
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color var(--transition-fast);
+}
+
+.tn-tab-entry:hover {
+  background: var(--color-surface);
+}
+
+.tn-tab-entry:focus-within {
+  background: var(--color-surface);
+}
+
+.tn-favicon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  object-fit: contain;
+}
+
+/* Tab info block — fills remaining width and enables ellipsis on children */
+.tn-tab-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tn-tab-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.tn-tab-domain {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* ===========================
+   8. Stage Indicators
+   =========================== */
+
+.tn-stage-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Active — green dot */
+.tn-tab-entry[data-stage="active"] .tn-stage-indicator {
+  background-color: #27AE60;
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+}
+
+/* Discarded — blue square-ish dot */
+.tn-tab-entry[data-stage="discarded"] .tn-stage-indicator {
+  background-color: #2196F3;
+  border-radius: 2px;
+  width: 8px;
+  height: 8px;
+}
+
+/* Saved — bookmark icon via ::before */
+.tn-tab-entry[data-stage="saved"] .tn-stage-indicator {
+  background: none;
+  font-size: 12px;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}
+
+.tn-tab-entry[data-stage="saved"] .tn-stage-indicator::before {
+  content: "\1F516"; /* bookmark */
+}
+
+/* Archived — clock icon via ::before */
+.tn-tab-entry[data-stage="archived"] .tn-stage-indicator {
+  background: none;
+  font-size: 12px;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}
+
+.tn-tab-entry[data-stage="archived"] .tn-stage-indicator::before {
+  content: "\1F554"; /* clock face 5:00 */
+}
+
+/* ===========================
+   9. Tab Action Buttons
+   =========================== */
+
+.tn-tab-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+/* Reveal on hover or when a child button is focused */
+.tn-tab-entry:hover .tn-tab-actions {
+  opacity: 1;
+}
+
+.tn-tab-entry:focus-within .tn-tab-actions {
+  opacity: 1;
+}
+
+.tn-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.tn-action-btn:hover {
+  background: #e8e8e8;
+  color: var(--color-text);
+}
+
+.tn-action-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.tn-action-discard:hover {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.tn-action-close:hover,
+.tn-action-restore:hover {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* ===========================
+   10. Archive Section
+   =========================== */
+
+.tn-archive-section {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.tn-archive-header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  gap: var(--space-sm);
+}
+
+/* Archive toggle uses .tn-collapse-btn — shares base button styles */
+#tn-archive-toggle {
+  flex: 1;
+  justify-content: flex-start;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+#tn-archive-toggle:hover {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+/* Archive list uses same tab-list style — overflow for when it's shown */
+#tn-archive-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ===========================
+   11. Footer
+   =========================== */
+
 #tn-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px;
-  border-top: 1px solid #e5e5e5;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.tn-tab-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
   flex-shrink: 0;
+}
+
+.tn-action-primary {
+  flex-shrink: 0;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px var(--space-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.tn-action-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.tn-action-primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ===========================
+   12. Responsive — 300px min
+   =========================== */
+
+/* At narrow widths, shrink the save button text if needed */
+@media (max-width: 340px) {
+  .tn-action-primary {
+    font-size: var(--font-size-xs);
+    padding: 4px var(--space-sm);
+  }
+
+  .tn-group-count {
+    display: none;
+  }
+}
+
+/* ===========================
+   13. Utility / Misc
+   =========================== */
+
+/* Ensure no horizontal overflow at any supported width */
+.tn-group-card,
+.tn-tab-entry,
+.tn-group-header {
+  max-width: 100%;
+}
+
+/* Focus ring for accessibility — consistent across browsers */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Scrollbar for archive list */
+#tn-archive-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+#tn-archive-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
 }
