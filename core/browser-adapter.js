@@ -62,6 +62,16 @@
         if (!_canDiscard) return Promise.resolve(null);
         return _api.tabs.discard(tabId);
       },
+      /**
+       * Send a one-time message to the content script in a specific tab.
+       * Wraps chrome.tabs.sendMessage / browser.tabs.sendMessage.
+       * @param {number} tabId
+       * @param {any} message
+       * @returns {Promise<any>}
+       */
+      sendMessage(tabId, message) {
+        return _api.tabs.sendMessage(tabId, message);
+      },
 
       /* Event listeners — pass through directly */
       get onCreated()   { return _api.tabs.onCreated; },

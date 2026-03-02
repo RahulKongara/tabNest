@@ -187,7 +187,7 @@
     // DATA-02: request navigation history from content script before closing
     let navHistory = [];
     try {
-      const resp = await chrome.tabs.sendMessage(tabId, { type: 'CAPTURE_NAV_HISTORY' });
+      const resp = await BrowserAdapter.tabs.sendMessage(tabId, { type: 'CAPTURE_NAV_HISTORY' });
       if (resp && Array.isArray(resp.history)) {
         navHistory = resp.history.slice(0, 20); // enforce max-20 server-side too
       }
@@ -324,13 +324,11 @@
   });
 
   // DATA-01: Track POST-backed page loads — stored on entry for UrlAnalyzer at save time
-  if (typeof chrome !== 'undefined' && chrome.webNavigation) {
-    chrome.webNavigation.onCompleted.addListener((details) => {
-      if (details.frameId !== 0) return; // main frame only
-      const entry = tabRegistry.get(details.tabId);
-      if (entry) entry.transitionType = details.transitionType || '';
-    });
-  }
+  BrowserAdapter.webNavigation.onCompleted.addListener(function(details) {
+    if (details.frameId !== 0) return; // main frame only
+    const entry = tabRegistry.get(details.tabId);
+    if (entry) entry.transitionType = details.transitionType || '';
+  });
 
   // ─── handleSaveAllInactive — callable from message handler and onCommand ──────
 
