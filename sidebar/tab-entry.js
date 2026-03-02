@@ -23,11 +23,19 @@
    * @param {TabEntry|SavedTabEntry} entry
    * @returns {HTMLLIElement}
    */
+  /** Stage label map — used for aria-labels and tn-sr-only text (UI-12 / NFR-23). */
+  const STAGE_LABELS = { active: 'Active', discarded: 'Discarded', saved: 'Saved', archived: 'Archived' };
+
   function create(entry) {
     const li = document.createElement('li');
     li.className = 'tn-tab-entry';
     // data-stage drives CSS stage indicator appearance and context menu targeting
     li.setAttribute('data-stage', entry.stage);
+    // UI-12: role and tabindex for keyboard navigation and screen readers
+    li.setAttribute('role', 'listitem');
+    li.setAttribute('tabindex', '0');
+    li.setAttribute('aria-label',
+      (entry.title || entry.url || 'Tab') + ', ' + (STAGE_LABELS[entry.stage] || entry.stage));
 
     // Set the appropriate data attribute for JS targeting
     if (entry.tabId !== undefined) {
@@ -84,23 +92,31 @@
     // ── Stage indicator ───────────────────────────────────────────────────────
     const stageSpan = document.createElement('span');
     stageSpan.className = 'tn-stage-indicator';
-    const stageLabels = { active: 'Active', discarded: 'Discarded', saved: 'Saved', archived: 'Archived' };
-    stageSpan.setAttribute('aria-label', stageLabels[entry.stage] || entry.stage);
+    stageSpan.setAttribute('data-stage', entry.stage);
+    // UI-12 / NFR-23: mark icon as decorative; use tn-sr-only text for screen readers
+    stageSpan.setAttribute('aria-hidden', 'true');
+
+    const stageText = document.createElement('span');
+    stageText.className = 'tn-sr-only';
+    stageText.textContent = STAGE_LABELS[entry.stage] || entry.stage;
+    stageSpan.appendChild(stageText);
 
     // ── Action buttons ────────────────────────────────────────────────────────
     const actions = document.createElement('div');
     actions.className = 'tn-tab-actions';
 
+    const tabLabel = entry.title || entry.url || 'tab';
+
     if (entry.stage === 'active' || entry.stage === 'discarded') {
       const discardBtn = document.createElement('button');
       discardBtn.className = 'tn-action-btn tn-action-discard';
-      discardBtn.setAttribute('aria-label', 'Discard tab');
+      discardBtn.setAttribute('aria-label', 'Discard ' + tabLabel);
       discardBtn.title = 'Discard';
       discardBtn.innerHTML = '&#128473;';
 
       const closeBtn = document.createElement('button');
       closeBtn.className = 'tn-action-btn tn-action-close';
-      closeBtn.setAttribute('aria-label', 'Save and close tab');
+      closeBtn.setAttribute('aria-label', 'Save and close ' + tabLabel);
       closeBtn.title = 'Save & Close';
       closeBtn.innerHTML = '&#10006;';
 
@@ -110,7 +126,7 @@
       // saved/archived — restore button only
       const restoreBtn = document.createElement('button');
       restoreBtn.className = 'tn-action-btn tn-action-restore';
-      restoreBtn.setAttribute('aria-label', 'Restore tab');
+      restoreBtn.setAttribute('aria-label', 'Restore ' + tabLabel);
       restoreBtn.title = 'Restore';
       restoreBtn.innerHTML = '&#8617;';
       actions.appendChild(restoreBtn);

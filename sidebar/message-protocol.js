@@ -47,6 +47,11 @@
     LIST_WORKSPACES:      'LIST_WORKSPACES',
     DELETE_WORKSPACE:     'DELETE_WORKSPACE',
 
+    // Smart restore (RESTORE-02, 04-04)
+    HOVER_PRE_RENDER:      'HOVER_PRE_RENDER',
+    CANCEL_PRE_RENDER:     'CANCEL_PRE_RENDER',
+    ACTIVATE_PRE_RENDERED: 'ACTIVATE_PRE_RENDERED',
+
     // Data management
     EXPORT_DATA:          'EXPORT_DATA',
     IMPORT_DATA:          'IMPORT_DATA',
@@ -56,6 +61,9 @@
     OPEN_SETTINGS_PANEL:  'OPEN_SETTINGS_PANEL',
 
     // ── Background → Sidebar (9 push types) ────────────────────────────────────
+
+    // Content Script → Background (one-way, no response)
+    NAV_HISTORY_REPORT:   'NAV_HISTORY_REPORT',  // DATA-02: content → background push
 
     // Tab state changes
     TAB_CREATED:          'TAB_CREATED',
@@ -69,6 +77,15 @@
     // Structural changes
     GROUP_UPDATED:        'GROUP_UPDATED',
     SETTINGS_CHANGED:     'SETTINGS_CHANGED',
+
+    // Keyboard shortcut triggered UI actions (CONF-02)
+    FOCUS_SEARCH:         'FOCUS_SEARCH',      // focus the search input
+    FOCUS_NEXT_GROUP:     'FOCUS_NEXT_GROUP',  // move keyboard focus to next group header
+    FOCUS_PREV_GROUP:     'FOCUS_PREV_GROUP',  // move keyboard focus to previous group header
+
+    // Workspace push events (05-04)
+    WORKSPACE_SAVED:      'WORKSPACE_SAVED',
+    WORKSPACE_DELETED:    'WORKSPACE_DELETED',
   };
 
   if (typeof module !== 'undefined' && module.exports) {

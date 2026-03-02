@@ -118,7 +118,201 @@
     }
   }
 
-  const StorageManager = { loadState, saveState, scheduleSave, getSettings, saveSettings };
+  /**
+   * CONF-03: Serialize all TabNest data to a JSON string for export.
+   * Reads from both storage.local (session state, workspaces) and storage.sync (settings, user rules).
+   * Returns a JSON string, or '{}' on error. Never throws.
+   * @returns {Promise<string>}
+   */
+  async function exportData() {
+    try {
+      const wsKey = (typeof CONSTANTS !== 'undefined' && CONSTANTS.STORAGE_KEYS && CONSTANTS.STORAGE_KEYS.WORKSPACES)
+        ? CONSTANTS.STORAGE_KEYS.WORKSPACES : 'tabnest_workspaces';
+      const [sessionResult, settingsResult, rulesResult, workspacesResult] = await Promise.all([
+        BrowserAdapter.storage.local.get(CONSTANTS.STORAGE_KEYS.SESSION_STATE),
+        BrowserAdapter.storage.sync.get(CONSTANTS.STORAGE_KEYS.SETTINGS),
+        BrowserAdapter.storage.sync.get(CONSTANTS.STORAGE_KEYS.USER_RULES),
+        BrowserAdapter.storage.local.get(wsKey),
+      ]);
+
+      const session   = sessionResult[CONSTANTS.STORAGE_KEYS.SESSION_STATE] || {};
+      const settings  = settingsResult[CONSTANTS.STORAGE_KEYS.SETTINGS] || {};
+      const userRules = rulesResult[CONSTANTS.STORAGE_KEYS.USER_RULES] || [];
+      const workspaces = workspacesResult[wsKey] || [];
+
+      const allSaved = Array.isArray(session.savedEntries) ? session.savedEntries : [];
+      const savedEntries    = allSaved.filter(e => e.stage === 'saved');
+      const archivedEntries = allSaved.filter(e => e.stage === 'archived');
+
+      const exportObj = {
+        version:         1,
+        exportedAt:      Date.now(),
+        settings:        Object.assign({}, CONSTANTS.DEFAULT_SETTINGS, settings),
+        userRules:       userRules,
+        groups:          Array.isArray(session.groups) ? session.groups : [],
+        savedEntries:    savedEntries,
+        archivedEntries: archivedEntries,
+        workspaces:      workspaces,
+      };
+
+      return JSON.stringify(exportObj, null, 2);
+    } catch (err) {
+      console.error('[TabNest] StorageManager.exportData() failed:', err);
+      return '{}';
+    }
+  }
+
+  /**
+   * CONF-03: Validate and restore state from an exported JSON string.
+   * On success, overwrites storage.local session state and storage.sync settings.
+   * Returns { success: true } or { success: false, error: string }.
+   * Never throws.
+   * @param {string} jsonString
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
+  async function importData(jsonString) {
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      return { success: false, error: 'Invalid JSON: ' + err.message };
+    }
+
+    if (typeof parsed !== 'object' || parsed === null) {
+      return { success: false, error: 'Invalid export: expected an object at root' };
+    }
+    if (parsed.version !== 1) {
+      return { success: false, error: 'Unsupported export version: ' + parsed.version };
+    }
+    if (!Array.isArray(parsed.groups)) {
+      return { success: false, error: 'Invalid export: missing or non-array "groups" field' };
+    }
+
+    try {
+      const wsKey = (typeof CONSTANTS !== 'undefined' && CONSTANTS.STORAGE_KEYS && CONSTANTS.STORAGE_KEYS.WORKSPACES)
+        ? CONSTANTS.STORAGE_KEYS.WORKSPACES : 'tabnest_workspaces';
+
+      if (parsed.settings && typeof parsed.settings === 'object') {
+        await BrowserAdapter.storage.sync.set({
+          [CONSTANTS.STORAGE_KEYS.SETTINGS]: parsed.settings,
+        });
+      }
+      if (Array.isArray(parsed.userRules)) {
+        await BrowserAdapter.storage.sync.set({
+          [CONSTANTS.STORAGE_KEYS.USER_RULES]: parsed.userRules,
+        });
+      }
+      const savedEntries = [
+        ...(Array.isArray(parsed.savedEntries)    ? parsed.savedEntries    : []),
+        ...(Array.isArray(parsed.archivedEntries) ? parsed.archivedEntries : []),
+      ];
+      const sessionState = {
+        groups:       parsed.groups,
+        savedEntries: savedEntries,
+        timestamp:    Date.now(),
+      };
+      await BrowserAdapter.storage.local.set({
+        [CONSTANTS.STORAGE_KEYS.SESSION_STATE]: sessionState,
+      });
+      if (Array.isArray(parsed.workspaces)) {
+        await BrowserAdapter.storage.local.set({
+          [wsKey]: parsed.workspaces,
+        });
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('[TabNest] StorageManager.importData() failed:', err);
+      return { success: false, error: 'Storage write failed: ' + err.message };
+    }
+  }
+
+  /**
+   * CONF-03: Wipe all TabNest data from storage.local and storage.sync.
+   * Returns { success: true } or { success: false, error: string }.
+   * Never throws.
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
+  async function clearAllData() {
+    try {
+      await Promise.all([
+        BrowserAdapter.storage.local.clear(),
+        BrowserAdapter.storage.sync.clear(),
+      ]);
+      return { success: true };
+    } catch (err) {
+      console.error('[TabNest] StorageManager.clearAllData() failed:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * SESS-03: Persist a WorkspaceSnapshot to storage.local.
+   * Enforces MAX_WORKSPACES limit by removing the oldest workspace first.
+   * @param {object} snapshot
+   * @returns {Promise<{ success: boolean, workspace?: object, error?: string }>}
+   */
+  async function saveWorkspace(snapshot) {
+    try {
+      const existing = await loadWorkspaces();
+      let workspaces = Array.isArray(existing) ? existing : [];
+      const MAX = (typeof CONSTANTS !== 'undefined' && CONSTANTS.MAX_WORKSPACES) || 20;
+      if (workspaces.length >= MAX) {
+        workspaces = workspaces.slice(1); // oldest is at index 0
+      }
+      workspaces.push(snapshot);
+      const wsKey = (typeof CONSTANTS !== 'undefined' && CONSTANTS.STORAGE_KEYS && CONSTANTS.STORAGE_KEYS.WORKSPACES)
+        ? CONSTANTS.STORAGE_KEYS.WORKSPACES : 'tabnest_workspaces';
+      await BrowserAdapter.storage.local.set({ [wsKey]: workspaces });
+      return { success: true, workspace: snapshot };
+    } catch (err) {
+      console.error('[TabNest] StorageManager.saveWorkspace() failed:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * SESS-03: Load all saved WorkspaceSnapshots from storage.local.
+   * Returns [] on error or missing key.
+   * @returns {Promise<object[]>}
+   */
+  async function loadWorkspaces() {
+    try {
+      const key = (typeof CONSTANTS !== 'undefined' && CONSTANTS.STORAGE_KEYS && CONSTANTS.STORAGE_KEYS.WORKSPACES)
+        ? CONSTANTS.STORAGE_KEYS.WORKSPACES : 'tabnest_workspaces';
+      const result = await BrowserAdapter.storage.local.get(key);
+      const wks = result[key];
+      return Array.isArray(wks) ? wks : [];
+    } catch (err) {
+      console.error('[TabNest] StorageManager.loadWorkspaces() failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * SESS-03: Delete a saved workspace by ID.
+   * @param {string} workspaceId
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
+  async function deleteWorkspace(workspaceId) {
+    try {
+      const existing = await loadWorkspaces();
+      const filtered = existing.filter(w => w.workspaceId !== workspaceId);
+      const wsKey = (typeof CONSTANTS !== 'undefined' && CONSTANTS.STORAGE_KEYS && CONSTANTS.STORAGE_KEYS.WORKSPACES)
+        ? CONSTANTS.STORAGE_KEYS.WORKSPACES : 'tabnest_workspaces';
+      await BrowserAdapter.storage.local.set({ [wsKey]: filtered });
+      return { success: true };
+    } catch (err) {
+      console.error('[TabNest] StorageManager.deleteWorkspace() failed:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  const StorageManager = {
+    loadState, saveState, scheduleSave,
+    getSettings, saveSettings,
+    exportData, importData, clearAllData,
+    saveWorkspace, loadWorkspaces, deleteWorkspace,
+  };
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { StorageManager };

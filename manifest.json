@@ -49,5 +49,39 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
-  "minimum_chrome_version": "114"
+  "minimum_chrome_version": "114",
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": { "default": "Ctrl+Shift+T" },
+      "description": "Toggle the TabNest sidebar"
+    },
+    "save-close-current": {
+      "suggested_key": { "default": "Ctrl+Shift+S" },
+      "description": "Save and close the current tab"
+    },
+    "restore-last": {
+      "suggested_key": { "default": "Ctrl+Shift+R" },
+      "description": "Restore the most recently saved tab"
+    },
+    "next-group": {
+      "suggested_key": { "default": "Ctrl+Shift+]" },
+      "description": "Move focus to the next tab group"
+    },
+    "prev-group": {
+      "suggested_key": { "default": "Ctrl+Shift+[" },
+      "description": "Move focus to the previous tab group"
+    },
+    "save-close-all": {
+      "suggested_key": { "default": "Ctrl+Shift+X" },
+      "description": "Save and close all inactive tabs"
+    },
+    "search-tabs": {
+      "suggested_key": { "default": "Ctrl+Shift+F" },
+      "description": "Focus the sidebar search input"
+    },
+    "discard-current": {
+      "suggested_key": { "default": "Ctrl+Shift+D" },
+      "description": "Discard the current tab"
+    }
+  }
 }

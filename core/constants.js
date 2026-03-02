@@ -370,6 +370,9 @@
     ARCHIVED:  'archived',
   };
 
+  /** Maximum number of workspace snapshots stored (SESS-03) */
+  const MAX_WORKSPACES = 20;
+
   const CONSTANTS = {
     ALARM_NAME,
     ALARM_PERIOD_MINUTES,
@@ -381,6 +384,7 @@
     BROWSER_INTERNAL_PROTOCOLS,
     DYNAMIC_DOMAINS,
     STAGE,
+    MAX_WORKSPACES,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

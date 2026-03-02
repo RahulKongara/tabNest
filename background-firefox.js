@@ -332,6 +332,25 @@
     });
   }
 
+  // ─── handleSaveAllInactive — callable from message handler and onCommand ──────
+
+  async function handleSaveAllInactive() {
+    const activeTabIds = await LifecycleManager.getActiveTabIds();
+    const settings = await StorageManager.getSettings();
+    const toClose = [];
+    for (const [tabId, entry] of tabRegistry) {
+      if (entry.isInternal) continue;
+      if (activeTabIds.includes(tabId)) continue;
+      const { exempt } = LifecycleManager.isExempt(entry, settings, activeTabIds, 'stage2to3');
+      if (!exempt) toClose.push({ tabId, entry });
+    }
+    for (const { tabId, entry } of toClose) {
+      await saveAndCloseTab(tabId, entry);
+      tabRegistry.delete(tabId);
+    }
+    return toClose.length;
+  }
+
   // ─── Alarm Listeners ─────────────────────────────────────────────────────────
 
   BrowserAdapter.alarms.onAlarm.addListener(async (alarm) => {
@@ -437,11 +456,32 @@
       }
 
       case MSG_TYPES.SAVE_SETTINGS: {
-        await StorageManager.saveSettings(data.settings);
-        if (data.settings && data.settings.userRules !== undefined) {
+        const newSettings = (data && data.settings) ? data.settings : {};
+
+        // Persist all settings fields (excluding userRules) to storage.sync SETTINGS key
+        const settingsToStore = Object.assign({}, newSettings);
+        delete settingsToStore.userRules; // userRules stored under USER_RULES key
+
+        await StorageManager.saveSettings(settingsToStore);
+
+        // Persist userRules under their own key if included
+        if (newSettings.userRules !== undefined) {
+          try {
+            await BrowserAdapter.storage.sync.set({
+              [CONSTANTS.STORAGE_KEYS.USER_RULES]: newSettings.userRules,
+            });
+          } catch (err) {
+            console.error('[TabNest FF] Failed to persist user rules:', err);
+          }
           await refreshUserRulesCache();
         }
-        pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, { settings: data.settings });
+
+        // Whitelist changes also affect the grouping exception logic — refresh cache
+        if (newSettings.whitelist !== undefined) {
+          await refreshUserRulesCache();
+        }
+
+        pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, { settings: newSettings });
         return { success: true };
       }
 
@@ -512,20 +552,8 @@
       }
 
       case MSG_TYPES.SAVE_ALL_INACTIVE: {
-        const activeTabIds = await LifecycleManager.getActiveTabIds();
-        const settings = await StorageManager.getSettings();
-        const toClose = [];
-        for (const [tabId, entry] of tabRegistry) {
-          if (entry.isInternal) continue;
-          if (activeTabIds.includes(tabId)) continue;
-          const { exempt } = LifecycleManager.isExempt(entry, settings, activeTabIds, 'stage2to3');
-          if (!exempt) toClose.push({ tabId, entry });
-        }
-        for (const { tabId, entry } of toClose) {
-          await saveAndCloseTab(tabId, entry);
-          tabRegistry.delete(tabId);
-        }
-        return { success: true, data: { count: toClose.length } };
+        const count = await handleSaveAllInactive();
+        return { success: true, data: { count } };
       }
 
       case MSG_TYPES.DISCARD_ALL_INACTIVE: {
@@ -720,20 +748,173 @@
         return { success: true, data: { count: urls.length } };
       }
 
-      // ── Phase 5 stubs ───────────────────────────────────────────────────
-      case MSG_TYPES.SAVE_WORKSPACE:
-      case MSG_TYPES.LIST_WORKSPACES:
-        return { success: true, data: [], _stub: true };
-      case MSG_TYPES.DELETE_WORKSPACE:
-      case MSG_TYPES.EXPORT_DATA:
-      case MSG_TYPES.IMPORT_DATA:
-      case MSG_TYPES.CLEAR_DATA:
+      // ── SESS-03: Workspace handlers ──────────────────────────────────────
+      case MSG_TYPES.SAVE_WORKSPACE: {
+        const name = (data && data.name) ? String(data.name).trim() : 'Workspace ' + new Date().toLocaleDateString();
+        if (!name) return { success: false, error: 'Workspace name cannot be empty' };
+        const workspaceId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+        const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+        const tabEntries = [...tabRegistry.values()]
+          .filter(e => !e.isInternal)
+          .map(e => ({ url: e.url, title: e.title, favicon: e.favicon, groupId: e.groupId }));
+        const snapshot = {
+          workspaceId,
+          name,
+          createdAt:    Date.now(),
+          groups:       Array.isArray(savedState.groups) ? savedState.groups.slice() : [],
+          tabEntries,
+          savedEntries: Array.isArray(savedState.savedEntries) ? savedState.savedEntries.slice() : [],
+        };
+        const result = await StorageManager.saveWorkspace(snapshot);
+        if (result.success) {
+          pushToSidebar(MSG_TYPES.WORKSPACE_SAVED, { workspace: snapshot });
+        }
+        return result;
+      }
+
+      case MSG_TYPES.LIST_WORKSPACES: {
+        const workspaces = await StorageManager.loadWorkspaces();
+        return { success: true, data: workspaces };
+      }
+
+      case MSG_TYPES.DELETE_WORKSPACE: {
+        const { workspaceId } = data || {};
+        const result = await StorageManager.deleteWorkspace(workspaceId);
+        if (result.success) {
+          pushToSidebar(MSG_TYPES.WORKSPACE_DELETED, { workspaceId });
+        }
+        return result;
+      }
+
+      // ── CONF-03: Data management handlers ───────────────────────────────
+      case MSG_TYPES.EXPORT_DATA: {
+        const json = await StorageManager.exportData();
+        return { success: true, data: { json } };
+      }
+
+      case MSG_TYPES.IMPORT_DATA: {
+        const { json } = data || {};
+        if (typeof json !== 'string' || json.length === 0) {
+          return { success: false, error: 'No JSON string provided' };
+        }
+        const result = await StorageManager.importData(json);
+        if (result.success) {
+          const newState = await StorageManager.loadState();
+          if (newState) globalThis._savedState = newState;
+          if (typeof refreshUserRulesCache === 'function') await refreshUserRulesCache();
+          const newSettings = await StorageManager.getSettings();
+          pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, { settings: newSettings });
+        }
+        return result;
+      }
+
+      case MSG_TYPES.CLEAR_DATA: {
+        const result = await StorageManager.clearAllData();
+        if (result.success) {
+          tabRegistry.clear();
+          globalThis._savedState = { savedEntries: [], groups: [], timestamp: Date.now() };
+          userRulesCache = [];
+          pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, {
+            settings: { ...(typeof CONSTANTS !== 'undefined' ? CONSTANTS.DEFAULT_SETTINGS : {}) },
+          });
+        }
+        return result;
+      }
+
       case MSG_TYPES.OPEN_SETTINGS_PANEL:
-        return { success: true, _stub: true };
+        return { success: true };
 
       default:
         return { success: false, error: `Unknown message type: ${type}` };
     }
+  }
+
+  // ─── CONF-02: Keyboard Shortcut Dispatcher ────────────────────────────────────
+  if (typeof chrome !== 'undefined' && chrome.commands) {
+    chrome.commands.onCommand.addListener(async (commandId) => {
+      try {
+        const [activeTab] = (await chrome.tabs.query({ active: true, currentWindow: true })) || [];
+        switch (commandId) {
+          case 'save-close-current':
+            if (activeTab && !isInternalPage(activeTab.url || '')) {
+              const entry = tabRegistry.get(activeTab.id);
+              if (entry) await saveAndCloseTab(activeTab.id, entry);
+            }
+            break;
+          case 'discard-current':
+            if (activeTab) {
+              await BrowserAdapter.tabs.discard(activeTab.id).catch(() => {});
+            }
+            break;
+          case 'restore-last': {
+            const savedState = globalThis._savedState || { savedEntries: [] };
+            const entries = Array.isArray(savedState.savedEntries) ? savedState.savedEntries : [];
+            if (entries.length > 0) {
+              const last = entries.reduce((a, b) => (a.savedAt > b.savedAt ? a : b));
+              const newTab = await BrowserAdapter.tabs.create({ url: last.url, active: true });
+              savedState.savedEntries = entries.filter(e => e.savedId !== last.savedId);
+              await StorageManager.saveState(savedState);
+              pushToSidebar(MSG_TYPES.TAB_RESTORED, { savedId: last.savedId, newTabId: newTab.id });
+            }
+            break;
+          }
+          case 'save-close-all':
+            await handleSaveAllInactive();
+            break;
+          case 'next-group':
+            pushToSidebar(MSG_TYPES.FOCUS_NEXT_GROUP, {});
+            break;
+          case 'prev-group':
+            pushToSidebar(MSG_TYPES.FOCUS_PREV_GROUP, {});
+            break;
+          case 'search-tabs':
+            pushToSidebar(MSG_TYPES.FOCUS_SEARCH, {});
+            break;
+          case 'toggle-sidebar':
+            break;
+        }
+      } catch (err) {
+        console.error('[TabNest FF] onCommand handler error:', commandId, err);
+      }
+    });
+  } else if (typeof browser !== 'undefined' && browser.commands) {
+    browser.commands.onCommand.addListener(async (commandId) => {
+      try {
+        const [activeTab] = (await browser.tabs.query({ active: true, currentWindow: true })) || [];
+        switch (commandId) {
+          case 'save-close-current':
+            if (activeTab && !isInternalPage(activeTab.url || '')) {
+              const entry = tabRegistry.get(activeTab.id);
+              if (entry) await saveAndCloseTab(activeTab.id, entry);
+            }
+            break;
+          case 'discard-current':
+            if (activeTab) await BrowserAdapter.tabs.discard(activeTab.id).catch(() => {});
+            break;
+          case 'restore-last': {
+            const savedState = globalThis._savedState || { savedEntries: [] };
+            const entries = Array.isArray(savedState.savedEntries) ? savedState.savedEntries : [];
+            if (entries.length > 0) {
+              const last = entries.reduce((a, b) => (a.savedAt > b.savedAt ? a : b));
+              const newTab = await BrowserAdapter.tabs.create({ url: last.url, active: true });
+              savedState.savedEntries = entries.filter(e => e.savedId !== last.savedId);
+              await StorageManager.saveState(savedState);
+              pushToSidebar(MSG_TYPES.TAB_RESTORED, { savedId: last.savedId, newTabId: newTab.id });
+            }
+            break;
+          }
+          case 'save-close-all': await handleSaveAllInactive(); break;
+          case 'next-group': pushToSidebar(MSG_TYPES.FOCUS_NEXT_GROUP, {}); break;
+          case 'prev-group': pushToSidebar(MSG_TYPES.FOCUS_PREV_GROUP, {}); break;
+          case 'search-tabs': pushToSidebar(MSG_TYPES.FOCUS_SEARCH, {}); break;
+          case 'toggle-sidebar': break;
+        }
+      } catch (err) {
+        console.error('[TabNest FF] onCommand handler error:', commandId, err);
+      }
+    });
   }
 
   // ─── Startup and Installation ─────────────────────────────────────────────────

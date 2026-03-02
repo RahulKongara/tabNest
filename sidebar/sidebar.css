@@ -777,3 +777,449 @@ body {
 .tn-search-input:not(:placeholder-shown) {
   border-color: var(--color-primary, #1B6B93);
 }
+
+/* ── Settings Panel Overlay (05-01) ──────────────────────────────────── */
+.tn-settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--tn-bg, #1a1a1a);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tn-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--tn-border, #333);
+  flex-shrink: 0;
+}
+.tn-settings-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tn-text, #e0e0e0);
+}
+.tn-settings-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--tn-text-muted, #888);
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.tn-settings-close:hover  { color: var(--tn-text, #e0e0e0); background: var(--tn-hover, #2a2a2a); }
+.tn-settings-close:focus  { outline: 2px solid var(--tn-accent, #1B6B93); outline-offset: 2px; }
+.tn-settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 24px;
+}
+.tn-settings-section { margin-top: 20px; }
+.tn-settings-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tn-text-muted, #888);
+  margin: 0 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--tn-border, #333);
+}
+.tn-settings-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+  gap: 5px;
+}
+.tn-settings-row--toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.tn-settings-label {
+  font-size: 13px;
+  color: var(--tn-text, #e0e0e0);
+  cursor: pointer;
+}
+.tn-settings-value {
+  color: var(--tn-accent, #1B6B93);
+  font-weight: 600;
+  font-size: 12px;
+  margin-left: 4px;
+}
+.tn-settings-slider {
+  width: 100%;
+  accent-color: var(--tn-accent, #1B6B93);
+  cursor: pointer;
+}
+.tn-settings-toggle {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--tn-accent, #1B6B93);
+  flex-shrink: 0;
+}
+.tn-settings-desc {
+  font-size: 12px;
+  color: var(--tn-text-muted, #888);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+.tn-settings-domain-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.tn-settings-domain-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--tn-text, #e0e0e0);
+  gap: 6px;
+}
+.tn-settings-domain-item:hover { background: var(--tn-hover, #2a2a2a); }
+.tn-settings-empty {
+  font-size: 12px;
+  color: var(--tn-text-muted, #888);
+  padding: 4px 2px;
+  font-style: italic;
+}
+.tn-settings-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--tn-text-muted, #888);
+  font-size: 14px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.tn-settings-remove-btn:hover  { color: #E74C3C; background: rgba(231, 76, 60, 0.12); }
+.tn-settings-remove-btn:focus  { outline: 2px solid var(--tn-accent, #1B6B93); }
+.tn-settings-add-row {
+  display: flex;
+  gap: 6px;
+}
+.tn-settings-domain-input {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--tn-bg-elevated, #2a2a2a);
+  border: 1px solid var(--tn-border, #333);
+  border-radius: 4px;
+  color: var(--tn-text, #e0e0e0);
+  font-size: 12px;
+}
+.tn-settings-domain-input:focus { border-color: var(--tn-accent, #1B6B93); outline: none; }
+.tn-settings-add-btn {
+  padding: 5px 12px;
+  background: var(--tn-accent, #1B6B93);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tn-settings-add-btn:hover { opacity: 0.85; }
+.tn-settings-add-btn:focus { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ── Keyboard Shortcut Rows (05-02) ──────────────────────────────────── */
+.tn-settings-row--shortcut {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tn-shortcut-binding {
+  font-size: 11px;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  background: var(--tn-bg-elevated, #2a2a2a);
+  border: 1px solid var(--tn-border, #333);
+  border-radius: 4px;
+  padding: 2px 7px;
+  color: var(--tn-text, #e0e0e0);
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+.tn-shortcut-record-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  background: var(--tn-bg-elevated, #2a2a2a);
+  border: 1px solid var(--tn-border, #333);
+  border-radius: 4px;
+  color: var(--tn-text-muted, #888);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tn-shortcut-record-btn:hover  { border-color: var(--tn-accent, #1B6B93); color: var(--tn-accent, #1B6B93); }
+.tn-shortcut-record-btn:focus  { outline: 2px solid var(--tn-accent, #1B6B93); }
+.tn-shortcut-record-btn.recording {
+  border-color: #E74C3C;
+  color: #E74C3C;
+  animation: tn-recording-pulse 1s ease infinite;
+}
+@keyframes tn-recording-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Data Section (05-03) ────────────────────────────────────────────── */
+.tn-settings-action-btn {
+  display: inline-block;
+  padding: 7px 14px;
+  margin-bottom: 8px;
+  background: var(--tn-bg-elevated, #2a2a2a);
+  border: 1px solid var(--tn-border, #333);
+  border-radius: 5px;
+  color: var(--tn-text, #e0e0e0);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.tn-settings-action-btn:hover { border-color: var(--tn-accent, #1B6B93); }
+.tn-settings-action-btn:focus { outline: 2px solid var(--tn-accent, #1B6B93); }
+.tn-settings-action-btn--danger { border-color: #c0392b; color: #E74C3C; }
+.tn-settings-action-btn--danger:hover { background: rgba(231, 76, 60, 0.12); }
+.tn-import-label { cursor: pointer; }
+.tn-import-file-input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0; overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+.tn-settings-import-status {
+  font-size: 12px;
+  margin: 2px 0 8px;
+  min-height: 16px;
+}
+.tn-settings-confirm-row {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid #c0392b;
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tn-settings-confirm-msg {
+  font-size: 12px;
+  color: #E74C3C;
+  line-height: 1.4;
+}
+.tn-settings-confirm-yes {
+  background: #c0392b;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tn-settings-confirm-yes:hover { opacity: 0.85; }
+.tn-settings-confirm-yes:focus { outline: 2px solid #fff; outline-offset: 2px; }
+.tn-settings-confirm-no {
+  background: none;
+  border: 1px solid var(--tn-border, #333);
+  border-radius: 4px;
+  color: var(--tn-text-muted, #888);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tn-settings-confirm-no:hover { border-color: var(--tn-text-muted, #888); color: var(--tn-text, #e0e0e0); }
+
+/* ── Workspace Manager (05-04) ───────────────────────────────────────── */
+.tn-workspace-section {
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border, #dee2e6);
+  padding-top: 10px;
+}
+.tn-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.tn-workspace-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #888);
+  margin: 0;
+}
+.tn-workspace-save-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  background: var(--color-primary, #1B6B93);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tn-workspace-save-btn:hover { opacity: 0.85; }
+.tn-workspace-save-btn:focus { outline: 2px solid var(--color-primary, #1B6B93); outline-offset: 2px; }
+.tn-workspace-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tn-workspace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 4px;
+  border-radius: 4px;
+  gap: 6px;
+}
+.tn-workspace-item:hover { background: var(--color-hover, #f8f9fa); }
+.tn-workspace-info { flex: 1; min-width: 0; }
+.tn-workspace-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text, #212529);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tn-workspace-meta {
+  font-size: 10px;
+  color: var(--color-text-muted, #888);
+}
+.tn-workspace-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.tn-workspace-restore-btn,
+.tn-workspace-delete-btn {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.tn-workspace-restore-btn {
+  background: var(--color-primary, #1B6B93);
+  color: #fff;
+  border-color: var(--color-primary, #1B6B93);
+}
+.tn-workspace-restore-btn:hover { opacity: 0.85; }
+.tn-workspace-delete-btn {
+  background: none;
+  color: var(--color-text-muted, #888);
+  border-color: var(--color-border, #dee2e6);
+}
+.tn-workspace-delete-btn:hover { border-color: #E74C3C; color: #E74C3C; }
+.tn-workspace-empty {
+  font-size: 12px;
+  color: var(--color-text-muted, #888);
+  font-style: italic;
+  padding: 4px 2px;
+}
+.tn-workspace-prompt-wrap {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.tn-workspace-name-input {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--color-primary, #1B6B93);
+  border-radius: 4px;
+}
+.tn-workspace-name-input:focus { outline: 2px solid var(--color-primary, #1B6B93); outline-offset: 0; }
+.tn-workspace-confirm-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--color-primary, #1B6B93);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+.tn-workspace-cancel-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: none;
+  border: 1px solid var(--color-border, #dee2e6);
+  border-radius: 4px;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+}
+
+/* ── Accessibility: WCAG 2.1 AA (Plan 05-05) ─────────────────────────── */
+
+/* Visually hidden — accessible to screen readers */
+.tn-sr-only,
+.tn-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus rings — keyboard-only, hidden on mouse */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid #1B6B93;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Always show outline on form inputs regardless of input method */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid #1B6B93;
+  outline-offset: 0;
+  border-radius: 2px;
+}
+
+/* Contrast correction: stage indicator Active dot — #27AE60 fails AA; use #2ecc71 */
+.tn-stage-indicator[data-stage="active"]    { color: #2ecc71; } /* 5.1:1 on #1a1a1a */
+.tn-stage-indicator[data-stage="discarded"] { color: #3498db; } /* 4.5:1 on #1a1a1a */
+.tn-stage-indicator[data-stage="saved"]     { color: #e0e0e0; }
+.tn-stage-indicator[data-stage="archived"]  { color: #9e9e9e; }
+
+/* Muted text contrast: #888 → #9e9e9e for supplementary normal-size text */
+.tn-tab-domain,
+.tn-workspace-meta,
+.tn-settings-desc,
+.tn-settings-empty,
+.tn-workspace-empty { color: #9e9e9e; }
+
+/* Ensure .tn-group-header is focusable and shows a clear focus ring */
+.tn-group-header:focus-visible {
+  outline: 2px solid #1B6B93;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* Tab entries in the keyboard-nav focus pool */
+.tn-tab-entry:focus-visible {
+  outline: 2px solid #1B6B93;
+  outline-offset: -1px;
+  border-radius: 4px;
+  background: var(--tn-hover, #2a2a2a);
+}

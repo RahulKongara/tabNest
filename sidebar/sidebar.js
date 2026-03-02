@@ -94,6 +94,7 @@
     savedEntries: [],
     groups: [],
     settings: {},
+    workspaces: [],
   };
 
   // Current search query — persisted across push updates so fullRender() re-applies it
@@ -228,6 +229,71 @@
     wireHoverPreRender();
   }
 
+  // ── Workspace rendering (Plan 05-04) ──────────────────────────────────────
+
+  /** Render the workspace list inside #tn-workspace-container. */
+  function renderWorkspaces(workspaces) {
+    const container = document.getElementById('tn-workspace-container');
+    if (!container) return;
+
+    // Build the workspace section with callbacks
+    const section = WorkspaceManager.render(
+      workspaces,
+      function onRestore(workspaceId) {
+        chrome.runtime.sendMessage({
+          type: MSG_TYPES.RESTORE_WORKSPACE,
+          data: { workspaceId },
+        });
+      },
+      function onDelete(workspaceId) {
+        chrome.runtime.sendMessage({
+          type: MSG_TYPES.DELETE_WORKSPACE,
+          data: { workspaceId },
+        }, function (response) {
+          if (response && response.success) {
+            _state.workspaces = _state.workspaces.filter(w => w.workspaceId !== workspaceId);
+            renderWorkspaces(_state.workspaces);
+          }
+        });
+      },
+      function onSaveClick() {
+        // Show inline name prompt before the workspace list
+        const existingPrompt = document.getElementById('tn-workspace-prompt-wrap');
+        if (existingPrompt) { existingPrompt.remove(); return; }
+
+        const prompt = WorkspaceManager.renderSavePrompt(
+          function (name) {
+            // Remove prompt
+            const p = document.getElementById('tn-workspace-prompt-wrap');
+            if (p) p.remove();
+            // Send SAVE_WORKSPACE
+            chrome.runtime.sendMessage({
+              type: MSG_TYPES.SAVE_WORKSPACE,
+              data: { name },
+            }, function (response) {
+              if (response && response.success && response.workspace) {
+                _state.workspaces = (_state.workspaces || []).concat([response.workspace]);
+                renderWorkspaces(_state.workspaces);
+              }
+            });
+          },
+          function () {
+            const p = document.getElementById('tn-workspace-prompt-wrap');
+            if (p) p.remove();
+            const saveWsBtn = document.getElementById('tn-save-workspace-btn');
+            if (saveWsBtn) saveWsBtn.focus();
+          }
+        );
+
+        // Insert prompt before the section
+        container.insertBefore(prompt, container.firstChild);
+      }
+    );
+
+    container.innerHTML = '';
+    container.appendChild(section);
+  }
+
   // ── Push message handler ───────────────────────────────────────────────────
   function handlePush(message) {
     const { type, data } = message || {};
@@ -289,12 +355,58 @@
       }
 
       case MSG_TYPES.SETTINGS_CHANGED:
-        _state.settings = data.settings;
+        _state.settings = Object.assign({}, _state.settings, data.settings);
         break;
+
+      case MSG_TYPES.WORKSPACE_SAVED: {
+        if (data && data.workspace) {
+          _state.workspaces = (_state.workspaces || []).concat([data.workspace]);
+          renderWorkspaces(_state.workspaces);
+        }
+        break;
+      }
+
+      case MSG_TYPES.WORKSPACE_DELETED: {
+        if (data && data.workspaceId) {
+          _state.workspaces = (_state.workspaces || []).filter(w => w.workspaceId !== data.workspaceId);
+          renderWorkspaces(_state.workspaces);
+        }
+        break;
+      }
+
+      case MSG_TYPES.FOCUS_SEARCH: {
+        const searchEl = document.getElementById('tn-search');
+        if (searchEl) { searchEl.focus(); searchEl.select(); }
+        break;
+      }
+
+      case MSG_TYPES.FOCUS_NEXT_GROUP: {
+        _focusAdjacentGroup(1);
+        break;
+      }
+
+      case MSG_TYPES.FOCUS_PREV_GROUP: {
+        _focusAdjacentGroup(-1);
+        break;
+      }
 
       default:
         // Unknown push type — ignore
     }
+  }
+
+  /**
+   * CONF-02: Move keyboard focus to the adjacent group header in the sidebar.
+   * direction: +1 for next, -1 for previous (wraps around).
+   */
+  function _focusAdjacentGroup(direction) {
+    const headers = Array.from(document.querySelectorAll('.tn-group-header'));
+    if (headers.length === 0) return;
+    const focused = document.activeElement;
+    let idx = headers.indexOf(focused);
+    if (idx === -1) idx = direction > 0 ? -1 : headers.length;
+    const next = headers[((idx + direction) + headers.length) % headers.length];
+    if (next) next.focus();
   }
 
   // ── Context menu handler (Plan 03-04) ─────────────────────────────────────
@@ -391,6 +503,19 @@
     }
   }
 
+  // ── Settings Save Handler (CONF-04) ───────────────────────────────────────
+  /**
+   * CONF-04: called by SettingsPanel on every control change.
+   * Merges the partial settings into _state.settings and sends SAVE_SETTINGS immediately.
+   */
+  function _handleSettingsSave(partialSettings) {
+    _state.settings = Object.assign({}, _state.settings, partialSettings);
+    chrome.runtime.sendMessage({
+      type: MSG_TYPES.SAVE_SETTINGS,
+      data: { settings: _state.settings },
+    });
+  }
+
   // ── Event delegation for action buttons ───────────────────────────────────
   function setupEventDelegation() {
     const groupList     = document.getElementById('tn-group-list');
@@ -452,6 +577,28 @@
       });
     }
 
+    // Settings panel toggle (Plan 05-01)
+    const settingsBtn = document.getElementById('tn-settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', function () {
+        if (document.getElementById('tn-settings-overlay')) {
+          SettingsPanel.close();
+          return;
+        }
+        // Read the freshest settings and user rules from background before opening
+        chrome.runtime.sendMessage({ type: MSG_TYPES.GET_SETTINGS }, function (response) {
+          const settings = (response && response.success && response.data && response.data.settings)
+            ? response.data.settings
+            : _state.settings;
+          // Read user rules from storage.sync directly (sidebar has storage permission)
+          chrome.storage.sync.get('tabnest_user_rules', function (result) {
+            const userRules = (result && result['tabnest_user_rules']) || [];
+            SettingsPanel.open(settings, _state.groups, userRules, _handleSettingsSave);
+          });
+        });
+      });
+    }
+
     // Search input wiring (Plan 03-05)
     const searchInput = document.getElementById('tn-search');
     if (searchInput) {
@@ -507,15 +654,110 @@
     });
   }
 
+  // ── Arrow key navigation (Plan 05-05) ─────────────────────────────────────
+
+  /**
+   * UI-12: Arrow key navigation within the group list.
+   * Attached to #tn-group-list as a single delegated keydown listener.
+   * ArrowDown / ArrowUp: move focus to next/prev focusable element.
+   * ArrowRight: expand focused group card.
+   * ArrowLeft: collapse focused group card.
+   */
+  function _setupArrowNavigation() {
+    const groupList = document.getElementById('tn-group-list');
+    if (!groupList) return;
+
+    groupList.addEventListener('keydown', function (e) {
+      const focusable = Array.from(
+        groupList.querySelectorAll('.tn-group-header, .tn-tab-entry[tabindex="0"]')
+      );
+      const current = document.activeElement;
+      const idx = focusable.indexOf(current);
+
+      switch (e.key) {
+        case 'ArrowDown': {
+          e.preventDefault();
+          const next = focusable[idx + 1];
+          if (next) next.focus();
+          break;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          const prev = focusable[idx - 1];
+          if (prev) prev.focus();
+          break;
+        }
+        case 'ArrowRight': {
+          if (current && current.classList.contains('tn-group-header')) {
+            e.preventDefault();
+            const expanded = current.getAttribute('aria-expanded') === 'true';
+            if (!expanded) current.click();
+          }
+          break;
+        }
+        case 'ArrowLeft': {
+          if (current && current.classList.contains('tn-group-header')) {
+            e.preventDefault();
+            const expanded = current.getAttribute('aria-expanded') === 'true';
+            if (expanded) current.click();
+          }
+          break;
+        }
+        case 'Enter': {
+          if (current && current.classList.contains('tn-tab-entry')) {
+            e.preventDefault();
+            current.click();
+          }
+          break;
+        }
+      }
+    });
+  }
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   async function init() {
     connectToBackground();
     setupEventDelegation();
+    _setupArrowNavigation();
+
+    // Global Escape key handler: closes settings overlay and workspace prompt
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+
+      // Close settings overlay
+      if (document.getElementById('tn-settings-overlay')) {
+        e.preventDefault();
+        SettingsPanel.close();
+        const gearBtn = document.getElementById('tn-settings-btn');
+        if (gearBtn) gearBtn.focus();
+        return;
+      }
+
+      // Close workspace name prompt
+      const promptWrap = document.getElementById('tn-workspace-prompt-wrap');
+      if (promptWrap) {
+        e.preventDefault();
+        promptWrap.remove();
+        const saveWsBtn = document.getElementById('tn-save-workspace-btn');
+        if (saveWsBtn) saveWsBtn.focus();
+        return;
+      }
+    });
 
     try {
       const data = await loadInitialState();
-      _state = { ...data };
+      _state = { ...data, workspaces: [] };
       fullRender();
+
+      // Load workspaces from background
+      chrome.runtime.sendMessage({ type: MSG_TYPES.LIST_WORKSPACES }, function (response) {
+        if (response && response.success && Array.isArray(response.data)) {
+          _state.workspaces = response.data;
+          renderWorkspaces(_state.workspaces);
+        } else {
+          renderWorkspaces([]);
+        }
+      });
     } catch (err) {
       console.error('[TabNest Sidebar] Failed to load initial state:', err);
       document.getElementById('tn-group-list').textContent = 'Loading...';

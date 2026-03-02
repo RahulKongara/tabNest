@@ -126,12 +126,12 @@ Plans:
   2. On Firefox 109+ (which supports `tabs.discard()`), the full four-stage lifecycle runs correctly including Stage 2 discard, with the `browser.*` API namespace working through the adapter
   3. On a simulated no-discard browser environment, Stage 2 is skipped entirely, the T1 timer adopts the T2 value, and tabs move directly from Stage 1 to Stage 3 (Saved & Closed) — verified by inspecting the lifecycle log
   4. Session persistence, group management, search, restore, and settings all function identically across Chrome, Edge, Brave, and Firefox
-**Plans**: TBD
+**Plans**: 3 plans (defined 2026-03-02)
 
 Plans:
-- [ ] 06-01: Firefox MV2 package — `manifest-firefox.json`, `background-firefox.js`, `sidebar_action` vs `sidePanel` adapter wiring, `browser.*` namespace compatibility
-- [ ] 06-02: Stage 2 graceful fallback — LIFE-08 no-discard detection in `browser-adapter.js`, T1 extends to T2 value, direct Stage 1→3 transition path, lifecycle log entries
-- [ ] 06-03: Cross-browser acceptance testing — XBROWSER-01 identical Chromium package validation, XBROWSER-03 install + full lifecycle smoke test on all four target browsers
+- [ ] 06-01-PLAN.md — Build script packaging + Firefox file audit: `build.sh` full implementation producing `dist/tabnest-chromium.zip` (MV3) and `dist/tabnest-firefox.zip` (MV2); `BrowserAdapter.tabs.sendMessage` added; `background-firefox.js` fixed (webNavigation via adapter, sendMessage via adapter, FORM_STATE_REPORT handler); `manifest-firefox.json` scripts array synced with `importScripts()`; `tests/cross-browser.test.js` created (Wave 1)
+- [ ] 06-02-PLAN.md — Stage 2 graceful fallback: LIFE-08 no-discard path in `lifecycle-manager.js` tick() — when `canDiscard=false`, tabs idle beyond T2 move directly Stage 1→3 via `_saveAndClose`; tabs idle only T1→T2 stay Stage 1; exemption check applied; structured log entry emitted; 5 new tests in `tests/lifecycle-manager.test.js` (Wave 1)
+- [ ] 06-03-PLAN.md — Cross-browser acceptance testing: `tests/build-output.test.js` validates both ZIP structures and manifest schemas; `tests/cross-browser.test.js` extended with Phase 4/5 parity checks; `tests/SMOKE-TEST-CHECKLIST.md` manual browser verification checklist for all four target browsers (Wave 2, depends 06-01, 06-02)
 
 ## Progress
 
@@ -145,4 +145,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Full Lifecycle | 5/5 | Complete   | 2026-03-02 |
 | 4. Intelligence Layer | 4/4 | Complete    | 2026-03-02 |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Planned (2026-03-02) | - |
-| 6. Cross-Browser | 0/3 | Not started | - |
+| 6. Cross-Browser | 0/3 | Planned (2026-03-02) | - |

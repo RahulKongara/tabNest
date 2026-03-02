@@ -16,7 +16,7 @@
       <button id="tn-new-group-btn" class="tn-icon-btn" aria-label="Create new group" title="New Group">+</button>
       <button id="tn-settings-btn" class="tn-icon-btn" aria-label="Open settings" title="Settings">&#9881;</button>
     </div>
-    <div class="tn-header-search">
+    <div role="search" class="tn-header-search">
       <input type="search" id="tn-search" class="tn-search-input"
              placeholder="Search tabs..." aria-label="Search tabs" autocomplete="off" />
       <span id="tn-search-count" class="tn-search-count" aria-live="polite" hidden></span>
@@ -42,6 +42,9 @@
     </ul>
   </section>
 
+  <!-- Workspace section: rendered by WorkspaceManager via sidebar.js -->
+  <div id="tn-workspace-container"></div>
+
   <footer id="tn-footer" role="contentinfo">
     <span id="tn-tab-count" class="tn-tab-count" aria-live="polite" aria-atomic="true"></span>
     <button id="tn-save-all-btn" class="tn-action-primary" aria-label="Save and close all inactive tabs">
@@ -56,6 +59,8 @@
   <script src="group-card.js"></script>
   <script src="ram-indicator.js"></script>
   <script src="search-bar.js"></script>
+  <script src="workspace-manager.js"></script>
+  <script src="settings-panel.js"></script>
   <script src="sidebar.js"></script>
 </body>
 </html>

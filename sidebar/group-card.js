@@ -20,10 +20,11 @@
   /**
    * Create a group card element containing all entries for a group.
    * @param {TabGroup} group - { id, name, color, order, isCollapsed, isCustom }
-   * @param {Array<TabEntry|SavedTabEntry>} entries
+   * @param {Array<TabEntry|SavedTabEntry>} entries - combined active/discarded/saved entries
+   * @param {Array<SavedTabEntry>} [savedEntriesForCount] - optional saved-only array for count display
    * @returns {HTMLDivElement}
    */
-  function create(group, entries) {
+  function create(group, entries, savedEntriesForCount) {
     const card = document.createElement('div');
     card.className = 'tn-group-card';
     card.dataset.groupId = group.id;
@@ -31,9 +32,14 @@
     card.setAttribute('data-collapsed', group.isCollapsed ? 'true' : 'false');
     card.style.setProperty('--group-color', group.color);
 
+    // UI-12: ARIA role and label for screen readers
+    card.setAttribute('role', 'group');
+    card.setAttribute('aria-label', group.name + ' group');
+
     // ── Header ────────────────────────────────────────────────────────────────
     const header = document.createElement('div');
     header.className = 'tn-group-header';
+    header.setAttribute('tabindex', '0'); // UI-12: keyboard navigable via Arrow keys
 
     // Color button (UI-10) — opens ColorPicker popup on click
     const colorBtn = document.createElement('button');
@@ -111,16 +117,29 @@
 
     const collapseBtn = document.createElement('button');
     collapseBtn.className = 'tn-collapse-btn';
-    collapseBtn.setAttribute('aria-label', `${group.isCollapsed ? 'Expand' : 'Collapse'} ${group.name} group`);
+
+    // UI-12: Build descriptive label with counts for screen readers
+    const openCount  = (Array.isArray(entries) ? entries : []).filter(e => e.stage === 'active' || e.stage === 'discarded').length;
+    const savedCount = (Array.isArray(savedEntriesForCount) ? savedEntriesForCount : (Array.isArray(entries) ? entries : []).filter(e => e.stage === 'saved')).length;
+    const toggleLabel = group.name + ' group: ' + openCount + ' open, ' + savedCount + ' saved. ' +
+      'Press ArrowRight to expand, ArrowLeft to collapse.';
+    collapseBtn.setAttribute('aria-label', toggleLabel);
     collapseBtn.setAttribute('aria-expanded', group.isCollapsed ? 'false' : 'true');
     collapseBtn.innerHTML = group.isCollapsed ? '&#9654;' : '&#9660;';
     collapseBtn.addEventListener('click', () => {
       const collapsed = card.getAttribute('data-collapsed') === 'true';
       card.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
-      collapseBtn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
-      collapseBtn.innerHTML = collapsed ? '&#9660;' : '&#9654;';
-      collapseBtn.setAttribute('aria-label', `${collapsed ? 'Collapse' : 'Expand'} ${group.name} group`);
+      const nowExpanded = !collapsed;
+      collapseBtn.setAttribute('aria-expanded', String(nowExpanded));
+      collapseBtn.innerHTML = nowExpanded ? '&#9660;' : '&#9654;';
+      collapseBtn.setAttribute('aria-label', group.name + ' group: ' + openCount + ' open, ' + savedCount + ' saved. ' +
+        'Press ArrowRight to expand, ArrowLeft to collapse.');
+      // Also update header aria-expanded for arrow key nav detection
+      header.setAttribute('aria-expanded', String(nowExpanded));
     });
+
+    // Sync aria-expanded on header for _setupArrowNavigation detection
+    header.setAttribute('aria-expanded', group.isCollapsed ? 'false' : 'true');
 
     // Header order: colorBtn, nameSpan, countSpan, collapseBtn
     header.appendChild(colorBtn);
@@ -191,5 +210,6 @@
     return parts.join(' · ') || '0 tabs';
   }
 
-  globalThis.GroupCard = { create, buildCountText };
+  // 'build' is an alias for 'create' (used by accessibility tests and Plan 05-05)
+  globalThis.GroupCard = { create, build: create, buildCountText };
 })();
