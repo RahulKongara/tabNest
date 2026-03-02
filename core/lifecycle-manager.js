@@ -161,14 +161,20 @@
           // Leave in Stage 1; retry on next tick
         }
       } else {
-        // No discard API — tab can advance directly to Stage 3 when T2 threshold reached
+        // No discard API (LIFE-08 / NFR-33): Stage 2 is skipped.
+        // Tabs idle beyond T2 move directly from Stage 1 to Stage 3 (Save & Close).
+        // Tabs idle only between T1 and T2 remain in Stage 1 — no action until T2 is reached.
         if (idleMs > t2Ms) {
           const { exempt: exempt3 } = isExempt(entry, settings, activeTabIds, 'stage2to3');
           if (!exempt3) {
-            console.log(`[TabNest] Stage 1→3 (no-discard path) candidate: tabId=${tabId}`);
-            // Phase 3 wires actual save+close here
+            console.log(`[TabNest] Stage 1->3 (no-discard path): tabId=${tabId} url=${entry.url} idleMs=${idleMs}`);
+            await _saveAndClose(tabId, entry);
+            tabRegistry.delete(tabId);
+          } else {
+            console.log(`[TabNest] Stage 1->3 (no-discard path) skipped — exempt: tabId=${tabId} reason=${isExempt(entry, settings, activeTabIds, 'stage2to3').reason}`);
           }
         }
+        // else: idle between T1 and T2 — remain Stage 1, no action
       }
     }
 

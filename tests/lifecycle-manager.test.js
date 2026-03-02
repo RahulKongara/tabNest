@@ -504,7 +504,124 @@ async function runSequentialTests() {
 // ─── Results ──────────────────────────────────────────────────────────────────
 
 setTimeout(() => {
-  runSequentialTests().then(() => {
+  runSequentialTests().then(async () => {
+
+    // ── Group 5: No-discard fallback (LIFE-08 / NFR-33) ──────────────────────────
+    console.log('\n── Group 5: No-discard fallback tests ──');
+
+    // Fixture: override canDiscard to false for this group
+    const origCanDiscard = global.BrowserAdapter.features.canDiscard;
+    global.BrowserAdapter.features.canDiscard = false;
+    // Also patch BrowserAdapter.tabs.discard to detect accidental calls
+    let discardCallCount = 0;
+    const origDiscard = global.BrowserAdapter.tabs.discard;
+    global.BrowserAdapter.tabs.discard = function() { discardCallCount++; return Promise.resolve(null); };
+
+    const T1_MIN = 5;
+    const T2_MIN = 15;
+    const noDiscardSettings = {
+      t1Minutes: T1_MIN,
+      t2Minutes: T2_MIN,
+      t3Days: 7,
+      whitelist: [],
+      managePinned: false,
+    };
+
+    // Test 5-1: Tab idle beyond T2 — saveAndClose called, removed from registry
+    {
+      const reg = new Map();
+      const now5 = Date.now();
+      reg.set(501, {
+        tabId: 501, url: 'https://example.com', title: 'Ex', favicon: '',
+        groupId: 'other', stage: CONSTANTS.STAGE.ACTIVE, isInternal: false,
+        isPinned: false, isAudible: false, hasUnsavedForm: false,
+        lastActiveTimestamp: now5 - (T2_MIN * 60 * 1000 + 5000), // T2 + 5s
+        createdAt: now5 - 100000, isStateful: false, transitionType: '',
+      });
+      let saveCloseCalled = false;
+      let saveCloseTabId = null;
+      await LM.tick(reg, noDiscardSettings, function() {}, async function(tabId) {
+        saveCloseCalled = true;
+        saveCloseTabId = tabId;
+      });
+      assert(saveCloseCalled, '5-1: canDiscard=false + idle>T2 — saveAndClose is called');
+      assertEqual(saveCloseTabId, 501, '5-1: saveAndClose called with correct tabId=501');
+      assert(!reg.has(501), '5-1: tab removed from registry after no-discard Stage 1->3');
+    }
+
+    // Test 5-2: Tab idle between T1 and T2 — no action (stays Stage 1)
+    {
+      const reg = new Map();
+      const now5 = Date.now();
+      reg.set(502, {
+        tabId: 502, url: 'https://between.com', title: 'Between', favicon: '',
+        groupId: 'other', stage: CONSTANTS.STAGE.ACTIVE, isInternal: false,
+        isPinned: false, isAudible: false, hasUnsavedForm: false,
+        lastActiveTimestamp: now5 - (T1_MIN * 60 * 1000 + 5000), // T1+5s, less than T2
+        createdAt: now5 - 100000, isStateful: false, transitionType: '',
+      });
+      let saveCloseCount = 0;
+      await LM.tick(reg, noDiscardSettings, function() {}, async function() { saveCloseCount++; });
+      assert(saveCloseCount === 0, '5-2: canDiscard=false + idle between T1 and T2 — no action taken');
+      assert(reg.has(502), '5-2: tab remains in registry when idle between T1 and T2');
+    }
+
+    // Test 5-3: Tab idle beyond T2 but pinned — exempt (not saved-and-closed)
+    {
+      const reg = new Map();
+      const now5 = Date.now();
+      reg.set(503, {
+        tabId: 503, url: 'https://pinned.com', title: 'Pinned', favicon: '',
+        groupId: 'other', stage: CONSTANTS.STAGE.ACTIVE, isInternal: false,
+        isPinned: true, isAudible: false, hasUnsavedForm: false,
+        lastActiveTimestamp: now5 - (T2_MIN * 60 * 1000 + 5000),
+        createdAt: now5 - 100000, isStateful: false, transitionType: '',
+      });
+      let saveClosePinned = false;
+      await LM.tick(reg, noDiscardSettings, function() {}, async function() { saveClosePinned = true; });
+      assert(!saveClosePinned, '5-3: canDiscard=false + pinned tab idle>T2 — exempt, saveAndClose NOT called');
+    }
+
+    // Test 5-4: With canDiscard=false, BrowserAdapter.tabs.discard is never called
+    {
+      const reg = new Map();
+      const now5 = Date.now();
+      reg.set(504, {
+        tabId: 504, url: 'https://nodiscard.com', title: 'ND', favicon: '',
+        groupId: 'other', stage: CONSTANTS.STAGE.ACTIVE, isInternal: false,
+        isPinned: false, isAudible: false, hasUnsavedForm: false,
+        lastActiveTimestamp: now5 - (T2_MIN * 60 * 1000 + 5000),
+        createdAt: now5 - 100000, isStateful: false, transitionType: '',
+      });
+      discardCallCount = 0;
+      await LM.tick(reg, noDiscardSettings, function() {}, async function() {});
+      assert(discardCallCount === 0, '5-4: canDiscard=false — BrowserAdapter.tabs.discard never called');
+    }
+
+    // Test 5-5: With canDiscard=true (normal path), T1-idle tab discarded, saveAndClose NOT called
+    {
+      global.BrowserAdapter.features.canDiscard = true;
+      discardCallCount = 0;
+      const reg = new Map();
+      const now5 = Date.now();
+      reg.set(505, {
+        tabId: 505, url: 'https://normal.com', title: 'Norm', favicon: '',
+        groupId: 'other', stage: CONSTANTS.STAGE.ACTIVE, isInternal: false,
+        isPinned: false, isAudible: false, hasUnsavedForm: false,
+        lastActiveTimestamp: now5 - (T1_MIN * 60 * 1000 + 5000),
+        createdAt: now5 - 100000, isStateful: false, transitionType: '',
+      });
+      let scCalled = false;
+      await LM.tick(reg, noDiscardSettings, function() {}, async function() { scCalled = true; });
+      assert(discardCallCount === 1, '5-5: canDiscard=true + idle>T1 — discard called once');
+      assert(!scCalled, '5-5: canDiscard=true + idle>T1 only — saveAndClose NOT called (tab in Stage 2 now)');
+      global.BrowserAdapter.features.canDiscard = false; // restore for any remaining tests
+    }
+
+    // Restore patched functions
+    global.BrowserAdapter.features.canDiscard = origCanDiscard;
+    global.BrowserAdapter.tabs.discard = origDiscard;
+
     console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
     if (failed > 0) process.exit(1);
   }).catch(err => {
