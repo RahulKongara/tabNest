@@ -108,14 +108,14 @@ Plans:
   3. Clicking "Export" in settings downloads a JSON file containing all settings and saved tabs; importing a valid JSON file restores that state; "Clear All Data" wipes storage after confirmation
   4. User can save the current session as a named workspace (e.g., "Monday Morning"), see it listed in the Workspaces section, and restore it with one click — opening tabs in staggered batches and recreating groups
   5. Every interactive element in the sidebar is reachable by Tab key, activatable by Enter, dismissable by Escape, and announces its purpose and state to a screen reader via ARIA labels (WCAG 2.1 AA)
-**Plans**: TBD
+**Plans**: 5 plans (defined 2026-03-02)
 
 Plans:
-- [ ] 05-01: Settings panel — `settings-panel.js` with all sections (lifecycle timers, behavior toggles, whitelist, custom rules, batch size), CONF-04 immediate sync write
-- [ ] 05-02: Keyboard shortcuts — `chrome.commands` registration for all 8 shortcuts, settings UI for rebinding (CONF-02), background handler wiring
-- [ ] 05-03: Export/import + clear data — CONF-03 JSON export/import, clear all data with confirmation, `EXPORT_DATA` / `IMPORT_DATA` message handlers
-- [ ] 05-04: Workspace snapshots — `workspace-manager.js`, SESS-03 save/restore named workspaces (max 20), staggered batch restore, workspace list UI
-- [ ] 05-05: Keyboard navigation + ARIA accessibility — UI-12 full keyboard nav (Tab/Enter/Escape/Arrow), ARIA labels on all interactive elements, WCAG 2.1 AA color contrast audit
+- [ ] 05-01-PLAN.md — Settings panel: `settings-panel.js` IIFE with all five sections (Lifecycle Timers, Behavior, Whitelist, Custom Rules, Restore), CONF-04 immediate sync write, SAVE_SETTINGS background handler upgraded from stub (Wave 1)
+- [ ] 05-02-PLAN.md — Keyboard shortcuts: `chrome.commands` in both manifests, `onCommand` dispatcher in background.js for all 8 shortcuts, `_buildShortcutsSection()` with Record UI, FOCUS_SEARCH/FOCUS_NEXT_GROUP/FOCUS_PREV_GROUP push types (Wave 2, depends 05-01)
+- [ ] 05-03-PLAN.md — Export/import + clear data: StorageManager exportData/importData/clearAllData, EXPORT_DATA/IMPORT_DATA/CLEAR_DATA handlers upgraded from stubs, `_buildDataSection()` with file picker and inline confirmation (Wave 2, depends 05-01)
+- [ ] 05-04-PLAN.md — Workspace snapshots: StorageManager saveWorkspace/loadWorkspaces/deleteWorkspace, `sidebar/components/workspace-manager.js` component, SAVE_WORKSPACE/RESTORE_WORKSPACE/DELETE_WORKSPACE/LIST_WORKSPACES handlers, WORKSPACE_SAVED/DELETED push types, max 20 enforced (Wave 2, depends 05-01, 05-03)
+- [ ] 05-05-PLAN.md — Keyboard navigation + ARIA: `.tn-sr-only` utility, `:focus-visible` rings, Arrow key roving tabindex, Escape with focus restoration, WCAG 2.1 AA contrast corrections, role=group/listitem/search, aria-expanded, title-referencing aria-labels (Wave 3, depends 05-01 through 05-04)
 
 ### Phase 6: Cross-Browser
 **Goal**: TabNest installs, runs the full lifecycle, and passes all acceptance tests on Chrome 114+, Edge 114+, Brave latest, and Firefox 109+; on browsers without `tabs.discard()` the extension degrades gracefully by skipping Stage 2 and extending the T1 timer
@@ -144,5 +144,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Sidebar MVP | 5/5 | Complete   | 2026-03-01 |
 | 3. Full Lifecycle | 5/5 | Complete   | 2026-03-02 |
 | 4. Intelligence Layer | 0/4 | Planned     | - |
-| 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |
+| 5. Settings, Shortcuts, and Workspaces | 0/5 | Planned (2026-03-02) | - |
 | 6. Cross-Browser | 0/3 | Not started | - |
