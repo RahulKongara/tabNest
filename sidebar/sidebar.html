@@ -13,11 +13,13 @@
     <div class="tn-header-top">
       <span class="tn-logo" aria-label="TabNest">TabNest</span>
       <span id="tn-ram-indicator" class="tn-ram-badge" aria-label="RAM savings" title="Estimated RAM savings"></span>
+      <button id="tn-new-group-btn" class="tn-icon-btn" aria-label="Create new group" title="New Group">+</button>
       <button id="tn-settings-btn" class="tn-icon-btn" aria-label="Open settings" title="Settings">&#9881;</button>
     </div>
     <div class="tn-header-search">
       <input type="search" id="tn-search" class="tn-search-input"
              placeholder="Search tabs..." aria-label="Search tabs" autocomplete="off" />
+      <span id="tn-search-count" class="tn-search-count" aria-live="polite" hidden></span>
     </div>
   </header>
 
@@ -49,9 +51,11 @@
 
   <!-- Component scripts (loaded in dependency order) -->
   <script src="message-protocol.js"></script>
+  <script src="color-picker.js"></script>
   <script src="tab-entry.js"></script>
   <script src="group-card.js"></script>
   <script src="ram-indicator.js"></script>
+  <script src="search-bar.js"></script>
   <script src="sidebar.js"></script>
 </body>
 </html>

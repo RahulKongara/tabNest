@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: milestone
-status: unknown
-last_updated: "2026-03-01T18:04:26.824Z"
+milestone: v0.5
+milestone_name: beta
+status: in_progress
+last_updated: "2026-03-02T00:00:00.000Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 6
+  completed_phases: 3
+  total_plans: 15
+  completed_plans: 15
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 
 ## Current Position
 
-Phase: 2 of 6 (Sidebar MVP) — COMPLETE
+Phase: 3 of 6 (Full Lifecycle) — COMPLETE
 Plan: 5 of 5 in current phase — COMPLETE
-Status: Phase 2 complete
-Last activity: 2026-03-01 — Plan 02-05 complete: RamIndicator wired into sidebar, SESS-01 auto-save triggers, SESS-02 startup reconciliation. Phase 2 all 5 plans done.
+Status: Phase 3 complete
+Last activity: 2026-03-02 — Plan 03-05 complete: search-bar.js, ContextMenu singleton, drag-and-drop, color-picker.js, group management handlers, saveAndCloseTab(), Stage 3→4 archive loop. Phase 3 all 5 plans done.
 
-Progress: [########░░] 40% (10/25 plans complete)
+Progress: [############░░░░░░░░] 60% (15/25 plans complete)
 
 ## Performance Metrics
 
@@ -57,6 +57,11 @@ Progress: [########░░] 40% (10/25 plans complete)
 | 02-sidebar-mvp | P02 | 10m | 2 | 5 |
 | 02-sidebar-mvp | P04 | 3m | 2 | 4 |
 | 02-sidebar-mvp | P05 | 5m | 2 | 5 |
+| 03-full-lifecycle | P01 | pre-wired | 2 | 3 |
+| 03-full-lifecycle | P02 | pre-wired | 2 | 3 |
+| 03-full-lifecycle | P03 | - | 2 | 5 |
+| 03-full-lifecycle | P04 | - | 2 | 5 |
+| 03-full-lifecycle | P05 | - | 2 | 4 |
 
 ## Accumulated Context
 
@@ -118,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: Completed 02-05-PLAN.md — RAM indicator, SESS-01 auto-save triggers (onCreated/onRemoved/alarm), SESS-02 startup reconciliation. Phase 2 Sidebar MVP complete.
+Last session: 2026-03-02
+Stopped at: Completed 03-05-PLAN.md — All 5 Phase 3 plans complete. Full lifecycle pipeline end-to-end, group management, drag-and-drop, context menus, and real-time search implemented.
 Resume file: None

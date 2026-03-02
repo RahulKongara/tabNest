@@ -254,9 +254,199 @@ console.log('\n=== tick() — LIFE-03 lifecycle transitions ===');
   });
 }
 
+// ── Stage 2 push tests (Plan 03-01) ──────────────────────────────────────────
+
+console.log('\n=== tick() — Stage 2 push (Plan 03-01) ===');
+
+// Test P1: tick() with pushCallback — successful discard calls pushCallback with TAB_DISCARDED
+{
+  const pushCalls = [];
+  const cb = (t, d) => pushCalls.push({ t, d });
+  const registry = new Map();
+  const now = Date.now();
+  const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+  registry.set(201, {
+    tabId: 201, url: 'https://a.com', stage: 'active',
+    lastActiveTimestamp: now - t1Ms - 5000,
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  discardedTabIds = [];
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, cb).then(() => {
+    assert(pushCalls.length === 1, 'Test P1: pushCallback called once after successful discard');
+    assertEqual(pushCalls[0] && pushCalls[0].t, 'TAB_DISCARDED', 'Test P1: type is TAB_DISCARDED');
+    assertEqual(pushCalls[0] && pushCalls[0].d && pushCalls[0].d.entry && pushCalls[0].d.entry.stage, 'discarded', 'Test P1: entry.stage is discarded');
+  });
+}
+
+// Test P2: deferred — runs after concurrent tests to avoid global state interference
+// (see sequentialTests below)
+
+// Test P3: tick() without pushCallback (undefined) — discard still executes, no TypeError
+{
+  discardedTabIds = [];
+  const registry = new Map();
+  const now = Date.now();
+  const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+  registry.set(203, {
+    tabId: 203, url: 'https://c.com', stage: 'active',
+    lastActiveTimestamp: now - t1Ms - 5000,
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined).then(() => {
+    assert(discardedTabIds.includes(203), 'Test P3: discard still executes with no pushCallback');
+    assertEqual(registry.get(203).stage, 'discarded', 'Test P3: stage becomes discarded without pushCallback');
+  }).catch(err => {
+    assert(false, 'Test P3: tick() without pushCallback threw: ' + err.message);
+  });
+}
+
+// Test P4: deferred — runs after concurrent tests to avoid global state interference
+// (see sequentialTests below)
+
+// ── Stage 2→3 save-and-close tests (Plan 03-02) ──────────────────────────────
+
+console.log('\n=== tick() — Stage 2→3 save-and-close (Plan 03-02) ===');
+
+// Test S1: DISCARDED entry idle > T2, NOT exempt → saveAndCloseCallback called; entry removed from registry
+{
+  const saveCalls = [];
+  const saveCb = (tabId, entry) => saveCalls.push({ tabId, entry });
+  const registry = new Map();
+  const now = Date.now();
+  const t2Ms = baseSettings.t2Minutes * 60 * 1000;
+  registry.set(301, {
+    tabId: 301, url: 'https://e.com', stage: 'discarded',
+    lastActiveTimestamp: now - t2Ms - 5000,
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined, saveCb).then(() => {
+    assert(saveCalls.length === 1, 'Test S1: saveAndCloseCallback called for discarded entry past T2');
+    assertEqual(saveCalls[0] && saveCalls[0].tabId, 301, 'Test S1: correct tabId passed to callback');
+    assert(!registry.has(301), 'Test S1: entry removed from tabRegistry after callback');
+  });
+}
+
+// Test S2: DISCARDED entry idle > T2 but isPinned=true → saveAndCloseCallback NOT called
+{
+  const saveCalls = [];
+  const saveCb = (tabId, entry) => saveCalls.push({ tabId, entry });
+  const registry = new Map();
+  const now = Date.now();
+  const t2Ms = baseSettings.t2Minutes * 60 * 1000;
+  registry.set(302, {
+    tabId: 302, url: 'https://f.com', stage: 'discarded',
+    lastActiveTimestamp: now - t2Ms - 5000,
+    isInternal: false, isPinned: true, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined, saveCb).then(() => {
+    assert(saveCalls.length === 0, 'Test S2: saveAndCloseCallback NOT called for pinned discarded entry');
+  });
+}
+
+// Test S3: DISCARDED entry idle < T2 → saveAndCloseCallback NOT called
+{
+  const saveCalls = [];
+  const saveCb = (tabId, entry) => saveCalls.push({ tabId, entry });
+  const registry = new Map();
+  const now = Date.now();
+  registry.set(303, {
+    tabId: 303, url: 'https://g.com', stage: 'discarded',
+    lastActiveTimestamp: now - 1000, // only 1 second idle
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined, saveCb).then(() => {
+    assert(saveCalls.length === 0, 'Test S3: saveAndCloseCallback NOT called when entry not past T2');
+  });
+}
+
+// Test S4: tick() without saveAndCloseCallback (undefined) — discarded entry > T2, tick() completes without error
+{
+  const registry = new Map();
+  const now = Date.now();
+  const t2Ms = baseSettings.t2Minutes * 60 * 1000;
+  registry.set(304, {
+    tabId: 304, url: 'https://h.com', stage: 'discarded',
+    lastActiveTimestamp: now - t2Ms - 5000,
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined, undefined).then(() => {
+    assert(true, 'Test S4: tick() without saveAndCloseCallback completes without error');
+  }).catch(err => {
+    assert(false, 'Test S4: tick() threw with no saveAndCloseCallback: ' + err.message);
+  });
+}
+
+// ─── Sequential tests (P2, P4) — BrowserAdapter global mutation ──────────────
+// These tests modify global BrowserAdapter state and MUST run after all concurrent
+// async ticks above have resolved. We chain them after a short delay.
+
+async function runSequentialTests() {
+  console.log('\n=== tick() — BrowserAdapter mutation tests (sequential) ===');
+
+  // Test P2: tick() when tabs.discard() throws — entry.stage stays active; pushCallback NOT called
+  {
+    const origDiscard = global.BrowserAdapter.tabs.discard;
+    global.BrowserAdapter.tabs.discard = async () => { throw new Error('discard failed'); };
+    const pushCalls = [];
+    const cb = (t, d) => pushCalls.push({ t, d });
+    const registry = new Map();
+    const now = Date.now();
+    const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+    registry.set(202, {
+      tabId: 202, url: 'https://b.com', stage: 'active',
+      lastActiveTimestamp: now - t1Ms - 5000,
+      isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+    });
+    mockActiveTabs = [];
+    await LM.tick(registry, baseSettings, cb);
+    assert(pushCalls.length === 0, 'Test P2: pushCallback NOT called when discard throws');
+    assertEqual(registry.get(202).stage, 'active', 'Test P2: entry.stage stays active on discard failure');
+    global.BrowserAdapter.tabs.discard = origDiscard;
+  }
+
+  // Test P4: canDiscard=false — entry.stage stays active; pushCallback NOT called for Stage 1→2
+  {
+    const origCanDiscard = global.BrowserAdapter.features.canDiscard;
+    global.BrowserAdapter.features.canDiscard = false;
+    const pushCalls = [];
+    const cb = (t, d) => pushCalls.push({ t, d });
+    const registry = new Map();
+    const now = Date.now();
+    const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+    registry.set(204, {
+      tabId: 204, url: 'https://d.com', stage: 'active',
+      lastActiveTimestamp: now - t1Ms - 5000,
+      isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+    });
+    mockActiveTabs = [];
+    await LM.tick(registry, baseSettings, cb);
+    const discardedCalls = pushCalls.filter(c => c.t === 'TAB_DISCARDED');
+    assert(discardedCalls.length === 0, 'Test P4: TAB_DISCARDED NOT pushed on no-discard browser');
+    assertEqual(registry.get(204).stage, 'active', 'Test P4: entry.stage stays active on no-discard browser');
+    global.BrowserAdapter.features.canDiscard = origCanDiscard;
+  }
+}
+
 // ─── Results ──────────────────────────────────────────────────────────────────
 
 setTimeout(() => {
-  console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
-  if (failed > 0) process.exit(1);
-}, 200);
+  runSequentialTests().then(() => {
+    console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
+    if (failed > 0) process.exit(1);
+  }).catch(err => {
+    console.error('Sequential tests threw:', err);
+    process.exit(1);
+  });
+}, 300);

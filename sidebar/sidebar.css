@@ -601,3 +601,179 @@ body {
   background: #ccc;
   border-radius: 2px;
 }
+
+/* ===========================
+   14. Drag and Drop (Plan 03-04)
+   =========================== */
+
+/* Dragged tab entry appears faded while in flight */
+.tn-drag-source {
+  opacity: 0.4;
+}
+
+/* Drop target group tab list gets a dashed border highlight */
+.tn-drag-over {
+  outline: 2px dashed var(--group-color, #1B6B93);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* ===========================
+   15. Context Menu (Plan 03-04)
+   =========================== */
+
+.tn-context-menu {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  background: var(--tn-bg-elevated, #2a2a2a);
+  border: 1px solid var(--tn-border, #444);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  min-width: 160px;
+  font-size: 13px;
+}
+
+.tn-context-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--tn-text, #e0e0e0);
+}
+
+.tn-context-item:hover {
+  background: var(--tn-hover, #3a3a3a);
+}
+
+.tn-context-item--disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.tn-context-separator {
+  height: 1px;
+  background: var(--tn-border, #444);
+  margin: 4px 0;
+}
+
+/* ===========================
+   16. Color Picker (Plan 03-03)
+   =========================== */
+
+/* Small color swatch circle in group header */
+.tn-color-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.tn-color-btn:hover {
+  border-color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.15);
+}
+
+.tn-color-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Popup container floated over the header */
+.tn-color-picker-popup {
+  position: absolute;
+  z-index: 1000;
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  margin-top: 4px;
+}
+
+/* Make group header position:relative for popup positioning */
+.tn-group-header {
+  position: relative;
+}
+
+.tn-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tn-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 20px);
+  gap: 4px;
+}
+
+.tn-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.tn-color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.tn-color-swatch--active {
+  border-color: var(--color-text, #333);
+}
+
+.tn-color-hex-input {
+  width: 100%;
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: var(--font-size-sm);
+  font-family: monospace;
+  box-sizing: border-box;
+}
+
+.tn-color-hex-input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+/* Inline rename input inside group header */
+.tn-group-rename-input {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #333);
+  min-width: 60px;
+  max-width: 140px;
+}
+
+/* ===========================
+   17. Search (Plan 03-05)
+   =========================== */
+
+/* Result count below the search input */
+.tn-search-count {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted, #888);
+  padding: 2px 4px;
+  margin-top: 2px;
+}
+
+/* Highlight search input border when a query is active */
+.tn-search-input:not(:placeholder-shown) {
+  border-color: var(--color-primary, #1B6B93);
+}

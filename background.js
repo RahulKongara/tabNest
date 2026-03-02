@@ -221,6 +221,61 @@ function buildSessionState() {
   };
 }
 
+// ─── saveAndCloseTab Helper ────────────────────────────────────────────────────
+
+/**
+ * Capture a tab snapshot, close the browser tab, push TAB_SAVED_AND_CLOSED to sidebar,
+ * and persist the new saved entry to _savedState.
+ * Called by LifecycleManager.tick() for Stage 2→3 candidates.
+ * @param {number} tabId
+ * @param {TabEntry} entry
+ */
+async function saveAndCloseTab(tabId, entry) {
+  const savedId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${tabId}`;
+
+  const savedEntry = {
+    savedId,
+    url:               entry.url,
+    title:             entry.title,
+    favicon:           entry.favicon,
+    groupId:           entry.groupId,
+    stage:             CONSTANTS.STAGE.SAVED,
+    savedAt:           Date.now(),
+    navigationHistory: [],   // Phase 4 fills this
+    isStateful:        false, // Phase 4 fills this
+  };
+
+  const savedState = globalThis._savedState || { savedEntries: [], groups: CONSTANTS.DEFAULT_GROUPS };
+  if (!Array.isArray(savedState.savedEntries)) savedState.savedEntries = [];
+  savedState.savedEntries.push(savedEntry);
+  globalThis._savedState = savedState;
+
+  await StorageManager.saveState(savedState);
+
+  try {
+    await BrowserAdapter.tabs.remove(tabId);
+  } catch (err) {
+    console.warn(`[TabNest] saveAndCloseTab: failed to close tabId=${tabId}:`, err.message);
+  }
+
+  pushToSidebar(MSG_TYPES.TAB_SAVED_AND_CLOSED, { entry, savedEntry });
+}
+
+// ─── findGroup Helper ──────────────────────────────────────────────────────────
+
+/**
+ * Find a group by ID in _savedState.groups.
+ * @param {string} groupId
+ * @returns {{ group: object|null, idx: number }}
+ */
+function findGroup(groupId) {
+  const groups = (globalThis._savedState && globalThis._savedState.groups) || [];
+  const idx = groups.findIndex(g => g.id === groupId);
+  return { group: idx !== -1 ? groups[idx] : null, idx };
+}
+
 // ─── Tab Event Handlers ────────────────────────────────────────────────────────
 
 // LIFE-01: onCreated — add new tab to registry immediately
@@ -348,7 +403,29 @@ BrowserAdapter.alarms.onAlarm.addListener(async (alarm) => {
     } catch {
       // Use defaults if storage read fails
     }
-    await LifecycleManager.tick(tabRegistry, settings);
+    await LifecycleManager.tick(tabRegistry, settings, pushToSidebar, saveAndCloseTab);
+    // ── Stage 3→4 (Archive) promotion ────────────────────────────────────────
+    {
+      const t3Ms = ((settings.t3Days !== undefined ? settings.t3Days : CONSTANTS.DEFAULT_SETTINGS.t3Days)) * 24 * 60 * 60 * 1000;
+      const savedState = globalThis._savedState;
+      if (savedState && Array.isArray(savedState.savedEntries)) {
+        let archiveCount = 0;
+        for (const savedEntry of savedState.savedEntries) {
+          if (savedEntry.stage === CONSTANTS.STAGE.SAVED) {
+            const ageMs = Date.now() - (savedEntry.savedAt || 0);
+            if (ageMs > t3Ms) {
+              savedEntry.stage = CONSTANTS.STAGE.ARCHIVED;
+              archiveCount++;
+              pushToSidebar(MSG_TYPES.TAB_ARCHIVED, { savedId: savedEntry.savedId });
+              console.log(`[TabNest] Stage 3→4 (Archive): savedId=${savedEntry.savedId}`);
+            }
+          }
+        }
+        if (archiveCount > 0) {
+          await StorageManager.saveState(savedState);
+        }
+      }
+    }
     // SESS-01: Auto-save after lifecycle tick (stage transitions may have occurred)
     StorageManager.scheduleSave(buildSessionState());
   }
@@ -414,6 +491,9 @@ async function handleMessage(message, sender) {
 
     case MSG_TYPES.SAVE_SETTINGS: {
       await StorageManager.saveSettings(data.settings);
+      if (data.settings && data.settings.userRules !== undefined) {
+        await refreshUserRulesCache();
+      }
       pushToSidebar(MSG_TYPES.SETTINGS_CHANGED, { settings: data.settings });
       return { success: true };
     }
@@ -440,26 +520,188 @@ async function handleMessage(message, sender) {
     }
 
     case MSG_TYPES.MOVE_TO_GROUP: {
-      const { tabId, groupId } = data || {};
+      const { tabId, savedId, groupId, domain, isFirstDrag } = data || {};
+
+      if (tabId != null) {
+        const entry = tabRegistry.get(tabId);
+        if (entry) {
+          entry.groupId = groupId;
+          pushToSidebar(MSG_TYPES.TAB_UPDATED, { entry });
+        }
+      }
+
+      if (savedId != null) {
+        const savedState = globalThis._savedState || {};
+        const se = (savedState.savedEntries || []).find(e => e.savedId === savedId);
+        if (se) {
+          se.groupId = groupId;
+          await StorageManager.saveState(savedState);
+        }
+      }
+
+      if (isFirstDrag && domain) {
+        const existing = await BrowserAdapter.storage.sync.get(CONSTANTS.STORAGE_KEYS.USER_RULES);
+        const rules = existing[CONSTANTS.STORAGE_KEYS.USER_RULES] || [];
+        const ruleIdx = rules.findIndex(r => r.domain === domain);
+        if (ruleIdx === -1) {
+          rules.push({ domain, groupId });
+        } else {
+          rules[ruleIdx].groupId = groupId;
+        }
+        await BrowserAdapter.storage.sync.set({ [CONSTANTS.STORAGE_KEYS.USER_RULES]: rules });
+        await refreshUserRulesCache();
+        console.log(`[TabNest] Domain rule upserted: ${domain} → ${groupId}`);
+      }
+
+      return { success: true };
+    }
+
+    case MSG_TYPES.SAVE_AND_CLOSE_TAB: {
+      const { tabId } = data || {};
       const entry = tabRegistry.get(tabId);
-      if (entry) {
-        entry.groupId = groupId;
-        pushToSidebar(MSG_TYPES.TAB_UPDATED, { entry });
+      if (!entry) return { success: false, error: 'Tab not found in registry' };
+      await saveAndCloseTab(tabId, entry);
+      tabRegistry.delete(tabId);
+      return { success: true };
+    }
+
+    case MSG_TYPES.SAVE_ALL_INACTIVE: {
+      const activeTabIds = await LifecycleManager.getActiveTabIds();
+      const settings = await StorageManager.getSettings();
+      const toClose = [];
+      for (const [tabId, entry] of tabRegistry) {
+        if (entry.isInternal) continue;
+        if (activeTabIds.includes(tabId)) continue;
+        const { exempt } = LifecycleManager.isExempt(entry, settings, activeTabIds, 'stage2to3');
+        if (!exempt) toClose.push({ tabId, entry });
+      }
+      for (const { tabId, entry } of toClose) {
+        await saveAndCloseTab(tabId, entry);
+        tabRegistry.delete(tabId);
+      }
+      return { success: true, data: { count: toClose.length } };
+    }
+
+    case MSG_TYPES.DISCARD_ALL_INACTIVE: {
+      const activeTabIds = await LifecycleManager.getActiveTabIds();
+      const settings = await StorageManager.getSettings();
+      for (const [tabId, entry] of tabRegistry) {
+        if (entry.isInternal || activeTabIds.includes(tabId)) continue;
+        const { exempt } = LifecycleManager.isExempt(entry, settings, activeTabIds, 'stage1to2');
+        if (!exempt && BrowserAdapter.features.canDiscard) {
+          try {
+            await BrowserAdapter.tabs.discard(tabId);
+            entry.stage = CONSTANTS.STAGE.DISCARDED;
+            pushToSidebar(MSG_TYPES.TAB_DISCARDED, { entry });
+          } catch { /* leave in Stage 1 */ }
+        }
       }
       return { success: true };
     }
 
-    // ── Phase 3 stubs ─────────────────────────────────────────────────────
-    case MSG_TYPES.SAVE_AND_CLOSE_TAB:
-    case MSG_TYPES.SAVE_ALL_INACTIVE:
-    case MSG_TYPES.DISCARD_ALL_INACTIVE:
-    case MSG_TYPES.CREATE_GROUP:
-    case MSG_TYPES.RENAME_GROUP:
-    case MSG_TYPES.SET_GROUP_COLOR:
-    case MSG_TYPES.DELETE_GROUP:
-    case MSG_TYPES.MERGE_GROUPS:
-    case MSG_TYPES.ARCHIVE_GROUP:
-      return { success: true, _stub: true };
+    case MSG_TYPES.CREATE_GROUP: {
+      const { name, color } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      if (!Array.isArray(savedState.groups)) savedState.groups = [...CONSTANTS.DEFAULT_GROUPS];
+      const newGroup = {
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `group-${Date.now()}`,
+        name: (name || 'New Group').trim(),
+        color: color || '#95A5A6',
+        order: savedState.groups.length,
+        isCollapsed: false,
+        isCustom: true,
+      };
+      savedState.groups.push(newGroup);
+      globalThis._savedState = savedState;
+      await StorageManager.saveState(savedState);
+      pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group: newGroup });
+      return { success: true, data: { group: newGroup } };
+    }
+
+    case MSG_TYPES.RENAME_GROUP: {
+      const { groupId, name } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      const { group, idx } = findGroup(groupId);
+      if (!group) return { success: false, error: 'Group not found' };
+      group.name = (name || '').trim() || group.name;
+      savedState.groups[idx] = group;
+      await StorageManager.saveState(savedState);
+      pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group });
+      return { success: true };
+    }
+
+    case MSG_TYPES.SET_GROUP_COLOR: {
+      const { groupId, color } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      const { group, idx } = findGroup(groupId);
+      if (!group) return { success: false, error: 'Group not found' };
+      group.color = color || group.color;
+      savedState.groups[idx] = group;
+      await StorageManager.saveState(savedState);
+      pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group });
+      return { success: true };
+    }
+
+    case MSG_TYPES.DELETE_GROUP: {
+      const { groupId } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      if (!Array.isArray(savedState.groups)) return { success: false, error: 'No groups' };
+      for (const [, entry] of tabRegistry) {
+        if (entry.groupId === groupId) entry.groupId = 'other';
+      }
+      if (Array.isArray(savedState.savedEntries)) {
+        for (const se of savedState.savedEntries) {
+          if (se.groupId === groupId) se.groupId = 'other';
+        }
+      }
+      savedState.groups = savedState.groups.filter(g => g.id !== groupId);
+      globalThis._savedState = savedState;
+      await StorageManager.saveState(savedState);
+      for (const g of savedState.groups) {
+        pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group: g });
+      }
+      return { success: true };
+    }
+
+    case MSG_TYPES.MERGE_GROUPS: {
+      const { sourceGroupId, targetGroupId } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      for (const [, entry] of tabRegistry) {
+        if (entry.groupId === sourceGroupId) entry.groupId = targetGroupId;
+      }
+      if (Array.isArray(savedState.savedEntries)) {
+        for (const se of savedState.savedEntries) {
+          if (se.groupId === sourceGroupId) se.groupId = targetGroupId;
+        }
+      }
+      savedState.groups = savedState.groups.filter(g => g.id !== sourceGroupId);
+      globalThis._savedState = savedState;
+      await StorageManager.saveState(savedState);
+      const { group: targetGroup } = findGroup(targetGroupId);
+      if (targetGroup) pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group: targetGroup });
+      return { success: true };
+    }
+
+    case MSG_TYPES.ARCHIVE_GROUP: {
+      const { groupId } = data || {};
+      const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+      if (Array.isArray(savedState.savedEntries)) {
+        for (const se of savedState.savedEntries) {
+          if (se.groupId === groupId && se.stage === CONSTANTS.STAGE.SAVED) {
+            se.stage = CONSTANTS.STAGE.ARCHIVED;
+            pushToSidebar(MSG_TYPES.TAB_ARCHIVED, { savedId: se.savedId });
+          }
+        }
+      }
+      const { group, idx } = findGroup(groupId);
+      if (group) {
+        group.isCollapsed = true;
+        savedState.groups[idx] = group;
+        pushToSidebar(MSG_TYPES.GROUP_UPDATED, { group });
+      }
+      await StorageManager.saveState(savedState);
+      return { success: true };
+    }
 
     // ── Phase 5 stubs ─────────────────────────────────────────────────────
     case MSG_TYPES.RESTORE_WORKSPACE:

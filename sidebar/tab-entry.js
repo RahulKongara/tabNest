@@ -6,6 +6,11 @@
  *
  * Supports both live tabs (TabEntry: stage active/discarded)
  * and closed tabs (SavedTabEntry: stage saved/archived).
+ *
+ * Phase 3 additions (03-04):
+ *   - Entries are draggable (HTML5 drag API) for cross-group reordering
+ *   - dragstart encodes tabId/savedId/domain/sourceGroupId into dataTransfer
+ *   - data-stage attribute set for context menu targeting in sidebar.js
  */
 
 (function () {
@@ -21,7 +26,7 @@
   function create(entry) {
     const li = document.createElement('li');
     li.className = 'tn-tab-entry';
-    // data-stage drives CSS stage indicator appearance
+    // data-stage drives CSS stage indicator appearance and context menu targeting
     li.setAttribute('data-stage', entry.stage);
 
     // Set the appropriate data attribute for JS targeting
@@ -31,7 +36,27 @@
       li.dataset.savedId = entry.savedId;
     }
 
-    // Favicon
+    // ── Drag-and-drop support (Plan 03-04) ────────────────────────────────────
+    li.draggable = true;
+
+    li.addEventListener('dragstart', (e) => {
+      const domain = extractDomain(entry.url || '');
+      const payload = {
+        tabId:         entry.tabId   !== undefined ? entry.tabId   : null,
+        savedId:       entry.savedId !== undefined ? entry.savedId : null,
+        domain,
+        sourceGroupId: entry.groupId,
+      };
+      e.dataTransfer.setData('text/plain', JSON.stringify(payload));
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('tn-drag-source');
+    });
+
+    li.addEventListener('dragend', () => {
+      li.classList.remove('tn-drag-source');
+    });
+
+    // ── Favicon ───────────────────────────────────────────────────────────────
     const img = document.createElement('img');
     img.className = 'tn-favicon';
     img.width = 16;
@@ -40,7 +65,7 @@
     img.src = entry.favicon || DEFAULT_FAVICON;
     img.onerror = () => { img.src = DEFAULT_FAVICON; };
 
-    // Info block
+    // ── Info block ────────────────────────────────────────────────────────────
     const info = document.createElement('div');
     info.className = 'tn-tab-info';
 
@@ -56,13 +81,13 @@
     info.appendChild(titleSpan);
     info.appendChild(domainSpan);
 
-    // Stage indicator
+    // ── Stage indicator ───────────────────────────────────────────────────────
     const stageSpan = document.createElement('span');
     stageSpan.className = 'tn-stage-indicator';
     const stageLabels = { active: 'Active', discarded: 'Discarded', saved: 'Saved', archived: 'Archived' };
     stageSpan.setAttribute('aria-label', stageLabels[entry.stage] || entry.stage);
 
-    // Action buttons
+    // ── Action buttons ────────────────────────────────────────────────────────
     const actions = document.createElement('div');
     actions.className = 'tn-tab-actions';
 

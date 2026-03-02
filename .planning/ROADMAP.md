@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Extension scaffold, browser adapter, tab event tracking, activity timestamps, 30s alarm, lifecycle exception rules, and domain/keyword auto-grouping engine
 - [x] **Phase 2: Sidebar MVP** - Unified sidebar rendering all lifecycle stages in group cards with RAM indicator, session auto-save, startup reconciliation, and single-tab restore (completed 2026-03-01)
-- [ ] **Phase 3: Full Lifecycle** - Stage 2 discard and Stage 4 archive transitions, user group management (create/rename/color/delete/merge), drag-and-drop with domain rule persistence, context menus, and search
+- [x] **Phase 3: Full Lifecycle** - Stage 2 discard and Stage 4 archive transitions, user group management (create/rename/color/delete/merge), drag-and-drop with domain rule persistence, context menus, and search (completed 2026-03-02)
 - [ ] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy)
 - [ ] **Phase 5: Settings, Shortcuts, and Workspaces** - Full settings panel, configurable keyboard shortcuts, export/import/clear data, named workspace snapshots, and WCAG 2.1 AA keyboard accessibility
 - [ ] **Phase 6: Cross-Browser** - Firefox MV2 package build, Stage 2 graceful fallback on discard-unsupported browsers, and full lifecycle validation on Chrome, Edge, Brave, and Firefox
@@ -74,11 +74,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Stage 2 discard transition: extend lifecycle-manager.js tick() with pushCallback, TAB_DISCARDED push, retry on failure (LIFE-04)
-- [ ] 03-02-PLAN.md — Stage 3 save-and-close + Stage 4 archive: saveAndCloseTab() helper, LIFE-05 snapshot/close/push, LIFE-06 archive timer loop, TAB_ARCHIVED push, UI-07 archive section
-- [ ] 03-03-PLAN.md — Group management: color-picker.js (UI-10), double-click rename, CREATE/RENAME/COLOR/DELETE/MERGE/ARCHIVE handlers, GROUP-03 domain rules in storage.sync (GROUP-04)
-- [ ] 03-04-PLAN.md — Drag-and-drop + context menus: draggable tab entries, drop on group cards, domain rule persistence on first drag (UI-05), right-click context menus (UI-09)
-- [ ] 03-05-PLAN.md — Search and filter: search-bar.js, real-time filter by title/URL/group name, result count, under 100ms for 200 entries (UI-04)
+- [x] 03-01-PLAN.md — Stage 2 discard transition: extend lifecycle-manager.js tick() with pushCallback, TAB_DISCARDED push, retry on failure (LIFE-04)
+- [x] 03-02-PLAN.md — Stage 3 save-and-close + Stage 4 archive: saveAndCloseTab() helper, LIFE-05 snapshot/close/push, LIFE-06 archive timer loop, TAB_ARCHIVED push, UI-07 archive section
+- [x] 03-03-PLAN.md — Group management: color-picker.js (UI-10), double-click rename, CREATE/RENAME/COLOR/DELETE/MERGE/ARCHIVE handlers, GROUP-03 domain rules in storage.sync (GROUP-04)
+- [x] 03-04-PLAN.md — Drag-and-drop + context menus: draggable tab entries, drop on group cards, domain rule persistence on first drag (UI-05), right-click context menus (UI-09)
+- [x] 03-05-PLAN.md — Search and filter: search-bar.js, real-time filter by title/URL/group name, result count, under 100ms for 200 entries (UI-04)
 
 ### Phase 4: Intelligence Layer
 **Goal**: The extension detects when a URL may lose state on restore and warns the user, captures each tab's navigation history before closing it, blocks lifecycle transitions for tabs with unsaved form data, and pre-warms tabs so restore feels instant
@@ -90,13 +90,13 @@ Plans:
   3. A tab with a dirty form field (any modified `input`, `textarea`, `select`, or `contenteditable`) does not get discarded or saved-and-closed — the lifecycle timer is blocked until the form is submitted or navigated away
   4. Hovering over a saved link in the sidebar for 500ms+ causes the tab to begin loading in the background; clicking it activates that pre-loaded tab immediately without a fresh page load
   5. Restoring a workspace opens tabs in configurable batches (default 3) with 500ms delays between batches, avoiding a RAM spike and keeping the browser responsive
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: Stateful URL detection — `url-analyzer.js` (SPA hash, session tokens, POST-backed via webNavigation, known dynamic domains), set `isStatefulUrl` flag, show ⚠️ in `tab-entry.js`
-- [ ] 04-02: Navigation history capture — `content/history-capture.js` content script, `NAV_HISTORY_REPORT` message, store `navHistory[]` on SavedTabEntry, display in sidebar
-- [ ] 04-03: Form state detection — `content/form-detector.js` content script, dirty-state tracking with passive listeners, `FORM_STATE_REPORT` message, lifecycle block in `lifecycle-manager.js`
-- [ ] 04-04: Smart restore — `restore-manager.js` (RESTORE-02 hover pre-render with 500ms delay + cleanup, RESTORE-03 staggered batch restore, RESTORE-04 lazy restore with `discarded: true` on Chromium)
+- [ ] 04-01-PLAN.md — Stateful URL detection: `url-analyzer.js` (SPA hash, session tokens, POST-backed via webNavigation, known dynamic domains), set `isStatefulUrl` flag, show ⚠️ in `tab-entry.js` (Wave 1)
+- [ ] 04-02-PLAN.md — Navigation history capture: `content/history-capture.js` content script, `CAPTURE_NAV_HISTORY` request + `NAV_HISTORY_REPORT` push, store `navigationHistory[]` on SavedTabEntry, collapsible history section in sidebar (Wave 1)
+- [ ] 04-03-PLAN.md — Form state detection: `content/form-detector.js` content script, dirty-state tracking with passive listeners, `FORM_STATE_REPORT` message, lifecycle block in `lifecycle-manager.js` (Wave 1)
+- [ ] 04-04-PLAN.md — Smart restore: `restore-manager.js` (RESTORE-02 hover pre-render 500ms + cleanup, RESTORE-03 staggered batch restore, RESTORE-04 lazy restore `discarded:true` Chromium), sidebar hover wiring, RESTORE_WORKSPACE handler (Wave 2)
 
 ### Phase 5: Settings, Shortcuts, and Workspaces
 **Goal**: Users can configure every aspect of TabNest's behavior through a settings panel, trigger core actions via keyboard shortcuts, export and import their data, save named workspace snapshots for recurring sessions, and navigate the entire sidebar with keyboard and screen reader support
@@ -142,7 +142,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
 | 2. Sidebar MVP | 5/5 | Complete   | 2026-03-01 |
-| 3. Full Lifecycle | 0/5 | Planned    | - |
-| 4. Intelligence Layer | 0/4 | Not started | - |
+| 3. Full Lifecycle | 5/5 | Complete   | 2026-03-02 |
+| 4. Intelligence Layer | 0/4 | Planned     | - |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Not started | - |
 | 6. Cross-Browser | 0/3 | Not started | - |

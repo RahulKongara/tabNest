@@ -111,10 +111,13 @@
    * @param {Map} tabRegistry - The in-memory tab registry from background.js
    * @param {object} settings - Current settings object (t1Minutes, t2Minutes, t3Days, whitelist)
    */
-  async function tick(tabRegistry, settings) {
+  async function tick(tabRegistry, settings, pushCallback, saveAndCloseCallback) {
     const now = Date.now();
     const t1Ms = (settings.t1Minutes || CONSTANTS.DEFAULT_SETTINGS.t1Minutes) * 60 * 1000;
     const t2Ms = (settings.t2Minutes || CONSTANTS.DEFAULT_SETTINGS.t2Minutes) * 60 * 1000;
+
+    const _push = (typeof pushCallback === 'function') ? pushCallback : function() {};
+    const _saveAndClose = (typeof saveAndCloseCallback === 'function') ? saveAndCloseCallback : function() {};
 
     const activeTabIds = await getActiveTabIds();
 
@@ -137,8 +140,6 @@
         const { exempt } = isExempt(entry, settings, activeTabIds, 'stage2to3');
         if (!exempt) {
           stage2to3Candidates.push({ tabId, entry, idleMs });
-          // Phase 3 will wire actual save+close here
-          console.log(`[TabNest] Stage 2→3 candidate: tabId=${tabId} url=${entry.url} idleMs=${idleMs}`);
         }
       }
 
@@ -153,7 +154,8 @@
           await BrowserAdapter.tabs.discard(tabId);
           entry.stage = CONSTANTS.STAGE.DISCARDED;
           console.log(`[TabNest] Tab discarded (Stage 2): tabId=${tabId} url=${entry.url}`);
-          // Phase 2 will add: push TAB_DISCARDED message to sidebar
+          const TYPE_DISCARDED = (typeof MSG_TYPES !== 'undefined') ? MSG_TYPES.TAB_DISCARDED : 'TAB_DISCARDED';
+          _push(TYPE_DISCARDED, { entry });
         } catch (err) {
           console.warn(`[TabNest] Failed to discard tabId=${tabId}:`, err.message);
           // Leave in Stage 1; retry on next tick
@@ -168,6 +170,13 @@
           }
         }
       }
+    }
+
+    // ── Process Stage 2→3 transitions ──────────────────────────────────────────
+    for (const { tabId, entry } of stage2to3Candidates) {
+      await _saveAndClose(tabId, entry);
+      tabRegistry.delete(tabId);
+      console.log(`[TabNest] Stage 2→3 (Save & Close): tabId=${tabId} url=${entry.url}`);
     }
 
     if (stage1to2Candidates.length > 0 || stage2to3Candidates.length > 0) {
