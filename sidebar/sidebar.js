@@ -224,6 +224,8 @@
     // RAM indicator uses unfiltered counts — shows true memory savings
     RamIndicator.update(tabs, savedEntries);
     updateSearchResultCount(filtered.matchCount, tabs.length + savedEntries.length);
+    // RESTORE-02: re-wire hover pre-render on freshly rendered saved entries
+    wireHoverPreRender();
   }
 
   // ── Push message handler ───────────────────────────────────────────────────
@@ -466,6 +468,43 @@
         }
       });
     }
+  }
+
+  // ── Hover Pre-Render (RESTORE-02) ─────────────────────────────────────────
+  /**
+   * Wire 500ms hover pre-render on all currently rendered saved tab entry elements.
+   * Called at the end of every fullRender() — fullRender replaces all DOM nodes so
+   * listeners from the previous render are automatically discarded (no accumulation).
+   */
+  function wireHoverPreRender() {
+    document.querySelectorAll('.tn-tab-entry--saved[data-saved-id]').forEach(function (li) {
+      let hoverTimer = null;
+      const savedId = li.dataset.savedId;
+
+      li.addEventListener('mouseenter', function () {
+        hoverTimer = setTimeout(function () {
+          chrome.runtime.sendMessage({ type: MSG_TYPES.HOVER_PRE_RENDER, data: { savedId: savedId } });
+        }, 500);
+      });
+
+      li.addEventListener('mouseleave', function () {
+        clearTimeout(hoverTimer);
+        hoverTimer = null;
+        // Notify background to close the pre-warmed tab if it was created
+        chrome.runtime.sendMessage({ type: MSG_TYPES.CANCEL_PRE_RENDER, data: { savedId: savedId } });
+      });
+
+      // Override the existing click handler to use pre-warm path
+      li.addEventListener('click', function (e) {
+        clearTimeout(hoverTimer);
+        hoverTimer = null;
+        e.stopPropagation();
+        chrome.runtime.sendMessage({ type: MSG_TYPES.ACTIVATE_PRE_RENDERED, data: { savedId: savedId } })
+          .catch(function () {
+            // Background not ready — ignore; RESTORE_TAB fallback handled by ACTIVATE_PRE_RENDERED
+          });
+      }, { capture: true });
+    });
   }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────

@@ -388,6 +388,68 @@ console.log('\n=== tick() — Stage 2→3 save-and-close (Plan 03-02) ===');
   });
 }
 
+// ── Form dirty-state block tests (Plan 04-03) ─────────────────────────────────
+
+console.log('\n=== tick() — Form dirty-state lifecycle block (Plan 04-03) ===');
+
+// Test F1: Stage 1→2 blocked by hasUnsavedForm=true
+{
+  discardedTabIds = [];
+  const registry = new Map();
+  const now = Date.now();
+  const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+  registry.set(401, {
+    tabId: 401, url: 'https://form.com', stage: 'active',
+    lastActiveTimestamp: now - t1Ms - 5000, // past T1
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: true,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings).then(() => {
+    assert(!discardedTabIds.includes(401), 'Test F1: tab with dirty form NOT discarded (Stage 1→2 blocked)');
+    assertEqual(registry.get(401) && registry.get(401).stage, 'active', 'Test F1: entry.stage stays active with dirty form');
+  });
+}
+
+// Test F2: Stage 2→3 blocked by hasUnsavedForm=true
+{
+  const saveCalls = [];
+  const saveCb = (tabId, entry) => saveCalls.push({ tabId, entry });
+  const registry = new Map();
+  const now = Date.now();
+  const t2Ms = baseSettings.t2Minutes * 60 * 1000;
+  registry.set(402, {
+    tabId: 402, url: 'https://form2.com', stage: 'discarded',
+    lastActiveTimestamp: now - t2Ms - 5000, // past T2
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: true,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings, undefined, saveCb).then(() => {
+    assert(saveCalls.length === 0, 'Test F2: saveAndCloseCallback NOT called for tab with dirty form (Stage 2→3 blocked)');
+    assert(registry.has(402), 'Test F2: entry stays in registry when form is dirty');
+  });
+}
+
+// Test F3: Stage 1→2 proceeds normally when hasUnsavedForm=false
+{
+  discardedTabIds = [];
+  const registry = new Map();
+  const now = Date.now();
+  const t1Ms = baseSettings.t1Minutes * 60 * 1000;
+  registry.set(403, {
+    tabId: 403, url: 'https://clean.com', stage: 'active',
+    lastActiveTimestamp: now - t1Ms - 5000, // past T1
+    isInternal: false, isPinned: false, isAudible: false, hasUnsavedForm: false,
+  });
+  mockActiveTabs = [];
+
+  LM.tick(registry, baseSettings).then(() => {
+    assert(discardedTabIds.includes(403), 'Test F3: tab without dirty form IS discarded (Stage 1→2 proceeds)');
+    assertEqual(registry.get(403) && registry.get(403).stage, 'discarded', 'Test F3: entry.stage becomes discarded');
+  });
+}
+
 // ─── Sequential tests (P2, P4) — BrowserAdapter global mutation ──────────────
 // These tests modify global BrowserAdapter state and MUST run after all concurrent
 // async ticks above have resolved. We chain them after a short delay.

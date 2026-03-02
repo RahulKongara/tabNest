@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Extension scaffold, browser adapter, tab event tracking, activity timestamps, 30s alarm, lifecycle exception rules, and domain/keyword auto-grouping engine
 - [x] **Phase 2: Sidebar MVP** - Unified sidebar rendering all lifecycle stages in group cards with RAM indicator, session auto-save, startup reconciliation, and single-tab restore (completed 2026-03-01)
 - [x] **Phase 3: Full Lifecycle** - Stage 2 discard and Stage 4 archive transitions, user group management (create/rename/color/delete/merge), drag-and-drop with domain rule persistence, context menus, and search (completed 2026-03-02)
-- [ ] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy)
+- [x] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy) (completed 2026-03-02)
 - [ ] **Phase 5: Settings, Shortcuts, and Workspaces** - Full settings panel, configurable keyboard shortcuts, export/import/clear data, named workspace snapshots, and WCAG 2.1 AA keyboard accessibility
 - [ ] **Phase 6: Cross-Browser** - Firefox MV2 package build, Stage 2 graceful fallback on discard-unsupported browsers, and full lifecycle validation on Chrome, Edge, Brave, and Firefox
 
@@ -93,10 +93,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Stateful URL detection: `url-analyzer.js` (SPA hash, session tokens, POST-backed via webNavigation, known dynamic domains), set `isStatefulUrl` flag, show ⚠️ in `tab-entry.js` (Wave 1)
-- [ ] 04-02-PLAN.md — Navigation history capture: `content/history-capture.js` content script, `CAPTURE_NAV_HISTORY` request + `NAV_HISTORY_REPORT` push, store `navigationHistory[]` on SavedTabEntry, collapsible history section in sidebar (Wave 1)
-- [ ] 04-03-PLAN.md — Form state detection: `content/form-detector.js` content script, dirty-state tracking with passive listeners, `FORM_STATE_REPORT` message, lifecycle block in `lifecycle-manager.js` (Wave 1)
-- [ ] 04-04-PLAN.md — Smart restore: `restore-manager.js` (RESTORE-02 hover pre-render 500ms + cleanup, RESTORE-03 staggered batch restore, RESTORE-04 lazy restore `discarded:true` Chromium), sidebar hover wiring, RESTORE_WORKSPACE handler (Wave 2)
+- [x] 04-01-PLAN.md — Stateful URL detection: `url-analyzer.js` (SPA hash, session tokens, POST-backed via webNavigation, known dynamic domains), set `isStatefulUrl` flag, show ⚠️ in `tab-entry.js` (Wave 1)
+- [x] 04-02-PLAN.md — Navigation history capture: `content/history-capture.js` content script, `CAPTURE_NAV_HISTORY` request + `NAV_HISTORY_REPORT` push, store `navigationHistory[]` on SavedTabEntry, collapsible history section in sidebar (Wave 1)
+- [x] 04-03-PLAN.md — Form state detection: `content/form-detector.js` content script, dirty-state tracking with passive listeners, `FORM_STATE_REPORT` message, lifecycle block in `lifecycle-manager.js` (Wave 1)
+- [x] 04-04-PLAN.md — Smart restore: `restore-manager.js` (RESTORE-02 hover pre-render 500ms + cleanup, RESTORE-03 staggered batch restore, RESTORE-04 lazy restore `discarded:true` Chromium), sidebar hover wiring, RESTORE_WORKSPACE handler (Wave 2)
 
 ### Phase 5: Settings, Shortcuts, and Workspaces
 **Goal**: Users can configure every aspect of TabNest's behavior through a settings panel, trigger core actions via keyboard shortcuts, export and import their data, save named workspace snapshots for recurring sessions, and navigate the entire sidebar with keyboard and screen reader support
@@ -143,6 +143,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 5/5 | Complete   | 2026-03-01 |
 | 2. Sidebar MVP | 5/5 | Complete   | 2026-03-01 |
 | 3. Full Lifecycle | 5/5 | Complete   | 2026-03-02 |
-| 4. Intelligence Layer | 0/4 | Planned     | - |
+| 4. Intelligence Layer | 4/4 | Complete    | 2026-03-02 |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Planned (2026-03-02) | - |
 | 6. Cross-Browser | 0/3 | Not started | - |

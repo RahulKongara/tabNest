@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.5
-milestone_name: beta
+milestone: v0.9
+milestone_name: rc
 status: in_progress
-last_updated: "2026-03-02T00:00:00.000Z"
+last_updated: "2026-03-02T06:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 4
+  total_plans: 19
+  completed_plans: 19
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 
 ## Current Position
 
-Phase: 3 of 6 (Full Lifecycle) — COMPLETE
-Plan: 5 of 5 in current phase — COMPLETE
-Status: Phase 3 complete
-Last activity: 2026-03-02 — Plan 03-05 complete: search-bar.js, ContextMenu singleton, drag-and-drop, color-picker.js, group management handlers, saveAndCloseTab(), Stage 3→4 archive loop. Phase 3 all 5 plans done.
+Phase: 4 of 6 (Intelligence Layer) — COMPLETE
+Plan: 4 of 4 in current phase — COMPLETE
+Status: Phase 4 complete
+Last activity: 2026-03-02 — Plan 04-04 complete: url-analyzer.js, history-capture.js, form-detector.js, restore-manager.js, hover pre-render wiring, batch restore, lazy restore. Phase 4 all 4 plans done.
 
-Progress: [############░░░░░░░░] 60% (15/25 plans complete)
+Progress: [###############░░░░░] 76% (19/25 plans complete)
 
 ## Performance Metrics
 

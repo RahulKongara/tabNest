@@ -18,6 +18,8 @@
       "core/lifecycle-manager.js",
       "core/grouping-engine.js",
       "core/storage-manager.js",
+      "core/url-analyzer.js",
+      "core/restore-manager.js",
       "sidebar/message-protocol.js",
       "background-firefox.js"
     ],

@@ -123,7 +123,57 @@
     li.appendChild(img);
     li.appendChild(info);
     li.appendChild(stageSpan);
+
+    // DATA-01: Stateful URL warning badge — rendered only when isStatefulUrl is true
+    if (entry.isStatefulUrl) {
+      const badge = document.createElement('span');
+      badge.className = 'tn-stateful-badge';
+      badge.setAttribute('aria-label', 'Warning: this URL may not fully restore page state');
+      badge.title = 'Stateful URL \u2014 restoring may not return you to exactly this page state ' +
+                    '(SPA route, session token, or form-submitted page)';
+      badge.textContent = '\u26A0\uFE0F'; // ⚠️
+      li.appendChild(badge);
+    }
+
     li.appendChild(actions);
+
+    // DATA-02: Collapsible navigation history section for saved/archived entries
+    if ((entry.stage === 'saved' || entry.stage === 'archived') &&
+        Array.isArray(entry.navigationHistory) && entry.navigationHistory.length > 0) {
+
+      const toggle = document.createElement('button');
+      toggle.className = 'tn-nav-history-toggle';
+      toggle.textContent = 'History (' + entry.navigationHistory.length + ')';
+      toggle.setAttribute('aria-expanded', 'false');
+
+      const histSection = document.createElement('div');
+      histSection.className = 'tn-nav-history';
+      histSection.hidden = true;
+
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const nowExpanded = histSection.hidden;
+        histSection.hidden = !nowExpanded;
+        toggle.setAttribute('aria-expanded', String(nowExpanded));
+      });
+
+      const list = document.createElement('ol');
+      list.className = 'tn-nav-history-list';
+      entry.navigationHistory.forEach(function (url) {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        item.appendChild(link);
+        list.appendChild(item);
+      });
+
+      histSection.appendChild(list);
+      li.appendChild(toggle);
+      li.appendChild(histSection);
+    }
 
     return li;
   }

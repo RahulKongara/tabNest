@@ -343,6 +343,25 @@
     'devtools://',
   ];
 
+  /**
+   * Known dynamic domains — URLs on these hosts may lose state on restore.
+   * Used by UrlAnalyzer.isStateful() (DATA-01 / SRS FR-20).
+   */
+  const DYNAMIC_DOMAINS = [
+    'docs.google.com',
+    'sheets.google.com',
+    'slides.google.com',
+    'figma.com',
+    'notion.so',
+    'airtable.com',
+    'miro.com',
+    'app.diagrams.net',
+    'codepen.io',
+    'codesandbox.io',
+    'replit.com',
+    'stackblitz.com',
+  ];
+
   /** Stage constants */
   const STAGE = {
     ACTIVE:    'active',
@@ -360,6 +379,7 @@
     DOMAIN_DICT,
     KEYWORD_SETS,
     BROWSER_INTERNAL_PROTOCOLS,
+    DYNAMIC_DOMAINS,
     STAGE,
   };
 

@@ -29,6 +29,8 @@ if (typeof importScripts === 'function') {
     'core/lifecycle-manager.js',
     'core/grouping-engine.js',
     'core/storage-manager.js',
+    'core/url-analyzer.js',
+    'core/restore-manager.js',
     'sidebar/message-protocol.js'
   );
 }
@@ -38,6 +40,8 @@ if (typeof importScripts === 'function') {
 // Re-initialized from storage on every service worker wake (see initializeRegistry).
 const tabRegistry = new Map();
 globalThis._tabRegistry = tabRegistry; // exposed for LifecycleManager and debugging
+
+const preWarmMap = new Map(); // savedId → preWarmTabId (RESTORE-02)
 
 // User rules cache — loaded from storage.sync on init and refreshed on settings change.
 // Avoids async work in the hot onCreated event path.
@@ -75,7 +79,9 @@ function createTabEntry(tab) {
     stage:              CONSTANTS.STAGE.ACTIVE,
     lastActiveTimestamp: tab.active ? now : (now - 1000), // active tabs start fresh
     createdAt:          now,
-    isStateful:         false,             // UrlAnalyzer sets this in Phase 4
+    isStateful:         false,             // legacy field — keep
+    transitionType:     '',                // set by webNavigation.onCompleted; DATA-01
+    hasUnsavedForm:     false,             // set by FORM_STATE_REPORT from content/form-detector.js
     isPinned:           tab.pinned  || false,
     isAudible:          tab.audible || false,
     windowId:           tab.windowId,
@@ -235,6 +241,17 @@ async function saveAndCloseTab(tabId, entry) {
     ? crypto.randomUUID()
     : `${Date.now()}-${tabId}`;
 
+  // DATA-02: request navigation history from content script before closing
+  let navHistory = [];
+  try {
+    const resp = await chrome.tabs.sendMessage(tabId, { type: 'CAPTURE_NAV_HISTORY' });
+    if (resp && Array.isArray(resp.history)) {
+      navHistory = resp.history.slice(0, 20); // enforce max-20 server-side too
+    }
+  } catch {
+    // Content script not injected (restricted page, new tab, etc.) — proceed without history (NFR-18)
+  }
+
   const savedEntry = {
     savedId,
     url:               entry.url,
@@ -243,8 +260,9 @@ async function saveAndCloseTab(tabId, entry) {
     groupId:           entry.groupId,
     stage:             CONSTANTS.STAGE.SAVED,
     savedAt:           Date.now(),
-    navigationHistory: [],   // Phase 4 fills this
-    isStateful:        false, // Phase 4 fills this
+    navigationHistory: navHistory,
+    isStateful:        false, // legacy field — keep
+    isStatefulUrl:     UrlAnalyzer.isStateful(entry.url, entry.transitionType || ''),
   };
 
   const savedState = globalThis._savedState || { savedEntries: [], groups: CONSTANTS.DEFAULT_GROUPS };
@@ -384,6 +402,15 @@ BrowserAdapter.windows.onFocusChanged.addListener(async (windowId) => {
     // Non-critical — next alarm tick will catch any missed update
   }
 });
+
+// DATA-01: Track POST-backed page loads — stored on entry for UrlAnalyzer at save time
+if (typeof chrome !== 'undefined' && chrome.webNavigation) {
+  chrome.webNavigation.onCompleted.addListener((details) => {
+    if (details.frameId !== 0) return; // main frame only
+    const entry = tabRegistry.get(details.tabId);
+    if (entry) entry.transitionType = details.transitionType || '';
+  });
+}
 
 // ─── Alarm Listeners ───────────────────────────────────────────────────────────
 
@@ -703,8 +730,78 @@ async function handleMessage(message, sender) {
       return { success: true };
     }
 
+    case 'FORM_STATE_REPORT': {
+      // DATA-03: content script reports whether a form field has been modified
+      const hasDirtyForm = Boolean((message.payload || {}).hasDirtyForm);
+      if (sender && sender.tab && typeof sender.tab.id === 'number') {
+        const entry = tabRegistry.get(sender.tab.id);
+        if (entry) {
+          entry.hasUnsavedForm = hasDirtyForm;
+          if (hasDirtyForm) {
+            console.log(`[TabNest] Form dirty state set: tabId=${sender.tab.id}`);
+          }
+        }
+      }
+      return { success: true };
+    }
+
+    // ── Smart Restore (RESTORE-02) — hover pre-render ─────────────────────
+    case MSG_TYPES.HOVER_PRE_RENDER: {
+      const { savedId } = data || {};
+      const settings = await StorageManager.getSettings();
+      if (settings.hoverPreRenderEnabled === false) return { success: false, reason: 'disabled' };
+      const savedState = globalThis._savedState || { savedEntries: [] };
+      const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
+      if (!savedEntry) return { success: false, error: 'Saved entry not found' };
+      const { preWarmTabId } = await RestoreManager.hoverPreRender(savedEntry);
+      preWarmMap.set(savedId, preWarmTabId);
+      return { success: true, data: { preWarmTabId } };
+    }
+
+    case MSG_TYPES.CANCEL_PRE_RENDER: {
+      const { savedId } = data || {};
+      const preWarmTabId = preWarmMap.get(savedId);
+      if (preWarmTabId !== undefined) {
+        preWarmMap.delete(savedId);
+        await RestoreManager.cancelPreRender(preWarmTabId);
+      }
+      return { success: true };
+    }
+
+    case MSG_TYPES.ACTIVATE_PRE_RENDERED: {
+      const { savedId } = data || {};
+      const preWarmTabId = preWarmMap.get(savedId);
+      const savedState = globalThis._savedState || { savedEntries: [] };
+      const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
+      if (!savedEntry) return { success: false, error: 'Saved entry not found' };
+      preWarmMap.delete(savedId);
+      if (preWarmTabId !== undefined) {
+        await RestoreManager.activatePreRendered(preWarmTabId, savedEntry, savedState, pushToSidebar, StorageManager);
+      } else {
+        // User clicked before hover pre-render completed — fall back to lazy restore
+        await RestoreManager.lazyRestore(savedEntry, savedState, pushToSidebar, StorageManager);
+      }
+      return { success: true };
+    }
+
+    // ── RESTORE_WORKSPACE (RESTORE-03 staggered batch) ────────────────────
+    case MSG_TYPES.RESTORE_WORKSPACE: {
+      const { workspaceId } = data || {};
+      const settings = await StorageManager.getSettings();
+      const batchSize = settings.batchRestoreSize || settings.batchSize || 3;
+      let workspaces = [];
+      try { workspaces = await StorageManager.loadWorkspaces() || []; } catch {}
+      const workspace = workspaces.find(w => w.workspaceId === workspaceId);
+      if (!workspace) return { success: false, error: 'Workspace not found' };
+      const urls = [
+        ...(workspace.tabEntries   || []).map(e => e.url),
+        ...(workspace.savedEntries || []).map(e => e.url),
+      ].filter(Boolean);
+      await RestoreManager.batchRestore(urls, batchSize, 500);
+      return { success: true, data: { count: urls.length } };
+    }
+
     // ── Phase 5 stubs ─────────────────────────────────────────────────────
-    case MSG_TYPES.RESTORE_WORKSPACE:
     case MSG_TYPES.SAVE_WORKSPACE:
     case MSG_TYPES.LIST_WORKSPACES:
       return { success: true, data: [], _stub: true };
