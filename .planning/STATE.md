@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v0.9
 milestone_name: rc
-status: in_progress
-last_updated: "2026-03-02T06:00:00.000Z"
+status: complete
+last_updated: "2026-03-03T00:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 19
-  completed_plans: 19
+  completed_phases: 6
+  total_plans: 22
+  completed_plans: 22
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-01)
 
 ## Current Position
 
-Phase: 4 of 6 (Intelligence Layer) — COMPLETE
-Plan: 4 of 4 in current phase — COMPLETE
-Status: Phase 4 complete
-Last activity: 2026-03-02 — Plan 04-04 complete: url-analyzer.js, history-capture.js, form-detector.js, restore-manager.js, hover pre-render wiring, batch restore, lazy restore. Phase 4 all 4 plans done.
+Phase: 6 of 6 (Cross-Browser) — COMPLETE
+Plan: 3 of 3 in current phase — COMPLETE
+Status: ALL PHASES COMPLETE (v0.9 RC)
+Last activity: 2026-03-03 — Phase 6 complete: build.sh full packaging, BrowserAdapter.tabs.sendMessage, background-firefox.js adapter fixes (webNavigation + sendMessage), LIFE-08 no-discard fallback (Stage 1->3 direct), cross-browser test suite (20 assertions), build-output test suite (32+ assertions), XBROWSER-03 smoke checklist.
 
-Progress: [###############░░░░░] 76% (19/25 plans complete)
+Progress: [####################] 100% (22/22 plans complete)
 
 ## Performance Metrics
 
@@ -123,6 +123,23 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Completed 03-05-PLAN.md — All 5 Phase 3 plans complete. Full lifecycle pipeline end-to-end, group management, drag-and-drop, context menus, and real-time search implemented.
+Last session: 2026-03-03
+Stopped at: Completed 06-03-PLAN.md — All 3 Phase 6 plans complete. Full cross-browser packaging (build.sh), BrowserAdapter.tabs.sendMessage added, background-firefox.js fully adapter-routed, LIFE-08 no-discard fallback implemented, comprehensive cross-browser and build-output test suites, XBROWSER-03 smoke checklist. All 6 phases complete.
 Resume file: None
+
+## Session Summary — Phase 6 (2026-03-03)
+
+### 06-01: Build Packaging + Adapter Fixes
+- `build/build.sh`: replaced Phase 1 stub with full Chromium + Firefox packaging (staging dirs, zip, manifest rename)
+- `core/browser-adapter.js`: added `sendMessage(tabId, message)` to tabs namespace (was missing)
+- `background-firefox.js`: fixed DATA-01 listener to use BrowserAdapter.webNavigation.onCompleted; fixed nav history fetch to use BrowserAdapter.tabs.sendMessage
+- `tests/cross-browser.test.js`: created — 20 assertions covering adapter parity, manifest sync, Phase 4/5 handler parity
+
+### 06-02: LIFE-08 No-Discard Fallback
+- `core/lifecycle-manager.js`: completed no-discard else branch — tabs idle >T2 go Stage 1→3 directly (save+close), tabs idle T1–T2 stay Stage 1, exemptions respected, structured log emitted
+- `tests/lifecycle-manager.test.js`: appended Group 5 (5 tests, 9 assertions) — all pass; total 55 passed
+
+### 06-03: Acceptance Test Suite
+- `tests/cross-browser.test.js`: extended with 8 Phase 4/5 parity checks (tests 13–20)
+- `tests/build-output.test.js`: created — programmatically runs build.sh, validates both ZIP structures and manifest schemas (32+ assertions)
+- `tests/SMOKE-TEST-CHECKLIST.md`: created — XBROWSER-03 manual checklist with 7 suites across 4 browsers
