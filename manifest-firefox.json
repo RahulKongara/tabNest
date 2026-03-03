@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "TabNest",
-  "version": "0.1.0",
-  "description": "Automatic tab lifecycle management with smart grouping — Active, Discard, Save & Close, Archive.",
+  "version": "1.0.0",
+  "description": "TabNest automatically organizes tabs into smart groups and manages them through a 4-stage lifecycle to save RAM and reduce clutter.",
   "permissions": [
     "tabs",
     "storage",
