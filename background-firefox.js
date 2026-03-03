@@ -485,23 +485,35 @@
 
       case MSG_TYPES.RESTORE_TAB: {
         // RESTORE-01: Create new tab, remove saved entry from state
-        const { savedId } = data || {};
-        const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
-        const entryIndex = (savedState.savedEntries || []).findIndex(e => e.savedId === savedId);
-        if (entryIndex === -1) return { success: false, error: 'Saved entry not found' };
-        const [savedEntry] = savedState.savedEntries.splice(entryIndex, 1);
-        // Persist updated state
-        await StorageManager.saveState(savedState);
-        // Open new tab
-        const newTab = await BrowserAdapter.tabs.create({ url: savedEntry.url });
-        pushToSidebar(MSG_TYPES.TAB_RESTORED, { savedId, newTabId: newTab.id });
-        return { success: true, data: { newTabId: newTab.id } };
+        try {
+          const { savedId } = data || {};
+          if (!savedId) return { success: false, error: 'savedId is required' };
+          const savedState = globalThis._savedState || { savedEntries: [], groups: [] };
+          const entryIndex = (savedState.savedEntries || []).findIndex(e => e.savedId === savedId);
+          if (entryIndex === -1) return { success: false, error: 'Saved entry not found' };
+          const [savedEntry] = savedState.savedEntries.splice(entryIndex, 1);
+          // Persist updated state
+          await StorageManager.saveState(savedState);
+          // Open new tab
+          const newTab = await BrowserAdapter.tabs.create({ url: savedEntry.url });
+          pushToSidebar(MSG_TYPES.TAB_RESTORED, { savedId, newTabId: newTab.id });
+          return { success: true, data: { newTabId: newTab.id } };
+        } catch (err) {
+          console.error('[TabNest FF] RESTORE_TAB failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
+        }
       }
 
       case MSG_TYPES.DISCARD_TAB: {
-        const { tabId } = data || {};
-        await BrowserAdapter.tabs.discard(tabId);
-        return { success: true };
+        try {
+          const { tabId } = data || {};
+          if (tabId == null) return { success: false, error: 'tabId is required' };
+          await BrowserAdapter.tabs.discard(tabId);
+          return { success: true };
+        } catch (err) {
+          console.error('[TabNest FF] DISCARD_TAB failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
+        }
       }
 
       case MSG_TYPES.MOVE_TO_GROUP: {
@@ -692,58 +704,78 @@
 
       // ── Smart Restore (RESTORE-02) — hover pre-render ───────────────────
       case MSG_TYPES.HOVER_PRE_RENDER: {
-        const { savedId } = data || {};
-        const settings = await StorageManager.getSettings();
-        if (settings.hoverPreRenderEnabled === false) return { success: false, reason: 'disabled' };
-        const savedState = globalThis._savedState || { savedEntries: [] };
-        const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
-        if (!savedEntry) return { success: false, error: 'Saved entry not found' };
-        const { preWarmTabId } = await RestoreManager.hoverPreRender(savedEntry);
-        preWarmMap.set(savedId, preWarmTabId);
-        return { success: true, data: { preWarmTabId } };
+        try {
+          const { savedId } = data || {};
+          const settings = await StorageManager.getSettings();
+          if (settings.hoverPreRenderEnabled === false) return { success: false, reason: 'disabled' };
+          const savedState = globalThis._savedState || { savedEntries: [] };
+          const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
+          if (!savedEntry) return { success: false, error: 'Saved entry not found' };
+          const { preWarmTabId } = await RestoreManager.hoverPreRender(savedEntry);
+          preWarmMap.set(savedId, preWarmTabId);
+          return { success: true, data: { preWarmTabId } };
+        } catch (err) {
+          console.error('[TabNest FF] HOVER_PRE_RENDER failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
+        }
       }
 
       case MSG_TYPES.CANCEL_PRE_RENDER: {
-        const { savedId } = data || {};
-        const preWarmTabId = preWarmMap.get(savedId);
-        if (preWarmTabId !== undefined) {
-          preWarmMap.delete(savedId);
-          await RestoreManager.cancelPreRender(preWarmTabId);
+        try {
+          const { savedId } = data || {};
+          const preWarmTabId = preWarmMap.get(savedId);
+          if (preWarmTabId !== undefined) {
+            preWarmMap.delete(savedId);
+            await RestoreManager.cancelPreRender(preWarmTabId);
+          }
+          return { success: true };
+        } catch (err) {
+          console.error('[TabNest FF] CANCEL_PRE_RENDER failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
         }
-        return { success: true };
       }
 
       case MSG_TYPES.ACTIVATE_PRE_RENDERED: {
-        const { savedId } = data || {};
-        const preWarmTabId = preWarmMap.get(savedId);
-        const savedState = globalThis._savedState || { savedEntries: [] };
-        const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
-        if (!savedEntry) return { success: false, error: 'Saved entry not found' };
-        preWarmMap.delete(savedId);
-        if (preWarmTabId !== undefined) {
-          await RestoreManager.activatePreRendered(preWarmTabId, savedEntry, savedState, pushToSidebar, StorageManager);
-        } else {
-          // User clicked before hover pre-render completed — fall back to lazy restore
-          await RestoreManager.lazyRestore(savedEntry, savedState, pushToSidebar, StorageManager);
+        try {
+          const { savedId } = data || {};
+          const preWarmTabId = preWarmMap.get(savedId);
+          const savedState = globalThis._savedState || { savedEntries: [] };
+          const savedEntry = (savedState.savedEntries || []).find(e => e.savedId === savedId);
+          if (!savedEntry) return { success: false, error: 'Saved entry not found' };
+          preWarmMap.delete(savedId);
+          if (preWarmTabId !== undefined) {
+            await RestoreManager.activatePreRendered(preWarmTabId, savedEntry, savedState, pushToSidebar, StorageManager);
+          } else {
+            // User clicked before hover pre-render completed — fall back to lazy restore
+            await RestoreManager.lazyRestore(savedEntry, savedState, pushToSidebar, StorageManager);
+          }
+          return { success: true };
+        } catch (err) {
+          console.error('[TabNest FF] ACTIVATE_PRE_RENDERED failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
         }
-        return { success: true };
       }
 
       // ── RESTORE_WORKSPACE (RESTORE-03 staggered batch) ──────────────────
       case MSG_TYPES.RESTORE_WORKSPACE: {
-        const { workspaceId } = data || {};
-        const settings = await StorageManager.getSettings();
-        const batchSize = settings.batchRestoreSize || settings.batchSize || 3;
-        let workspaces = [];
-        try { workspaces = await StorageManager.loadWorkspaces() || []; } catch {}
-        const workspace = workspaces.find(w => w.workspaceId === workspaceId);
-        if (!workspace) return { success: false, error: 'Workspace not found' };
-        const urls = [
-          ...(workspace.tabEntries   || []).map(e => e.url),
-          ...(workspace.savedEntries || []).map(e => e.url),
-        ].filter(Boolean);
-        await RestoreManager.batchRestore(urls, batchSize, 500);
-        return { success: true, data: { count: urls.length } };
+        try {
+          const { workspaceId } = data || {};
+          const settings = await StorageManager.getSettings();
+          const batchSize = settings.batchRestoreSize || settings.batchSize || 3;
+          let workspaces = [];
+          try { workspaces = await StorageManager.loadWorkspaces() || []; } catch {}
+          const workspace = workspaces.find(w => w.workspaceId === workspaceId);
+          if (!workspace) return { success: false, error: 'Workspace not found' };
+          const urls = [
+            ...(workspace.tabEntries   || []).map(e => e.url),
+            ...(workspace.savedEntries || []).map(e => e.url),
+          ].filter(Boolean);
+          await RestoreManager.batchRestore(urls, batchSize, 500);
+          return { success: true, data: { count: urls.length } };
+        } catch (err) {
+          console.error('[TabNest FF] RESTORE_WORKSPACE failed:', err);
+          return { success: false, error: err && err.message ? err.message : String(err) };
+        }
       }
 
       // ── SESS-03: Workspace handlers ──────────────────────────────────────

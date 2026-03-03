@@ -728,8 +728,42 @@
     });
   }
 
+  // ── Loading Overlay (GA 07-02) ─────────────────────────────────────────────
+
+  /**
+   * Insert a loading overlay above the group list while GET_FULL_STATE is in flight.
+   * Idempotent — does nothing if the overlay already exists.
+   * Accessible: aria-live="polite" + role="status" so screen readers announce it.
+   */
+  function _showLoadingOverlay() {
+    if (document.getElementById('tn-loading-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'tn-loading-overlay';
+    overlay.className = 'tn-loading-overlay';
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.setAttribute('aria-label', 'Loading TabNest');
+    overlay.setAttribute('role', 'status');
+    const text = document.createElement('span');
+    text.className = 'tn-loading-text';
+    text.textContent = 'Loading\u2026';
+    overlay.appendChild(text);
+    const groupList = document.getElementById('tn-group-list');
+    if (groupList && groupList.parentNode) {
+      groupList.parentNode.insertBefore(overlay, groupList);
+    } else {
+      document.body.appendChild(overlay);
+    }
+  }
+
+  /** Remove the loading overlay unconditionally (safe to call if already gone). */
+  function _removeLoadingOverlay() {
+    const overlay = document.getElementById('tn-loading-overlay');
+    if (overlay) overlay.remove();
+  }
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   async function init() {
+    _showLoadingOverlay();        // GA 07-02: show loading indicator immediately
     connectToBackground();
     setupEventDelegation();
     _setupArrowNavigation();
@@ -760,6 +794,7 @@
 
     try {
       const data = await loadInitialState();
+      _removeLoadingOverlay();    // GA 07-02: remove on success before rendering
       _state = { ...data, workspaces: [] };
       fullRender();
 
@@ -773,6 +808,7 @@
         }
       });
     } catch (err) {
+      _removeLoadingOverlay();    // GA 07-02: also remove on error
       console.error('[TabNest Sidebar] Failed to load initial state:', err);
       document.getElementById('tn-group-list').textContent = 'Loading...';
     }
