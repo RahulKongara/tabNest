@@ -267,7 +267,13 @@ async function saveAndCloseTab(tabId, entry) {
 
   const savedState = globalThis._savedState || { savedEntries: [], groups: CONSTANTS.DEFAULT_GROUPS };
   if (!Array.isArray(savedState.savedEntries)) savedState.savedEntries = [];
-  savedState.savedEntries.push(savedEntry);
+  // Upsert: update existing saved entry with same URL instead of creating a duplicate
+  const existingIdx = savedState.savedEntries.findIndex(e => e.url === savedEntry.url);
+  if (existingIdx !== -1) {
+    savedState.savedEntries[existingIdx] = savedEntry;
+  } else {
+    savedState.savedEntries.push(savedEntry);
+  }
   globalThis._savedState = savedState;
 
   await StorageManager.saveState(savedState);

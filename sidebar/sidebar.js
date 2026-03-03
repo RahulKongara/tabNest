@@ -239,8 +239,8 @@
     // RAM indicator uses unfiltered counts — shows true memory savings
     RamIndicator.update(tabs, savedEntries);
     updateSearchResultCount(filtered.matchCount, tabs.length + savedEntries.length);
-    // RESTORE-02: re-wire hover pre-render on freshly rendered saved entries
-    wireHoverPreRender();
+    // RESTORE-02: hover pre-render disabled by default (creates background tabs on hover)
+    // wireHoverPreRender();
   }
 
   // ── Workspace rendering (Plan 05-04) ──────────────────────────────────────

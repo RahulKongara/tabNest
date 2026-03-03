@@ -63,24 +63,20 @@
       "suggested_key": { "default": "Ctrl+Shift+R" },
       "description": "Restore the most recently saved tab"
     },
-    "next-group": {
-      "suggested_key": { "default": "Ctrl+Shift+]" },
-      "description": "Move focus to the next tab group"
-    },
-    "prev-group": {
-      "suggested_key": { "default": "Ctrl+Shift+[" },
-      "description": "Move focus to the previous tab group"
-    },
-    "save-close-all": {
-      "suggested_key": { "default": "Ctrl+Shift+X" },
-      "description": "Save and close all inactive tabs"
-    },
     "search-tabs": {
       "suggested_key": { "default": "Ctrl+Shift+F" },
       "description": "Focus the sidebar search input"
     },
+    "next-group": {
+      "description": "Move focus to the next tab group"
+    },
+    "prev-group": {
+      "description": "Move focus to the previous tab group"
+    },
+    "save-close-all": {
+      "description": "Save and close all inactive tabs"
+    },
     "discard-current": {
-      "suggested_key": { "default": "Ctrl+Shift+D" },
       "description": "Discard the current tab"
     }
   }
