@@ -2,7 +2,7 @@
 
 ## Overview
 
-TabNest is built in six phases that follow the natural dependency graph of a browser extension: the background engine must exist before the UI can talk to it, the UI must exist before lifecycle transitions can be surfaced, and cross-browser packaging comes last once the Chromium core is proven. Each phase delivers a coherent, verifiable capability — from a working background worker (Phase 1) through a polished, cross-browser extension ready for store submission (Phase 6). The PRD release plan (Alpha v0.1, Beta v0.5, RC v0.9, GA v1.0) maps to phases 1-2, 3, 4-5, and 6 respectively.
+TabNest is built in seven phases that follow the natural dependency graph of a browser extension: the background engine must exist before the UI can talk to it, the UI must exist before lifecycle transitions can be surfaced, cross-browser packaging comes after all features are proven, and GA polish + store submission is the final gate. Each phase delivers a coherent, verifiable capability — from a working background worker (Phase 1) through a polished, store-submitted extension at GA v1.0 (Phase 7). The PRD release plan (Alpha v0.1, Beta v0.5, RC v0.9, GA v1.0) maps to phases 1-2, 3, 4-5, 6, and 7 respectively.
 
 ## Phases
 
@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Intelligence Layer** - Stateful URL detection, navigation history capture, form state detection, and all three smart restore strategies (hover pre-render, staggered batch, lazy) (completed 2026-03-02)
 - [ ] **Phase 5: Settings, Shortcuts, and Workspaces** - Full settings panel, configurable keyboard shortcuts, export/import/clear data, named workspace snapshots, and WCAG 2.1 AA keyboard accessibility
 - [ ] **Phase 6: Cross-Browser** - Firefox MV2 package build, Stage 2 graceful fallback on discard-unsupported browsers, and full lifecycle validation on Chrome, Edge, Brave, and Firefox
+- [ ] **Phase 7: GA Polish and Store Submission** - Performance audit and optimization against all SRS §4.1 NFR targets, error handling hardening, empty/loading states, QUOTA_EXCEEDED resilience, and Chrome Web Store submission asset package (listing copy, screenshots spec, privacy policy, manifest validation)
 
 ## Phase Details
 
@@ -133,10 +134,28 @@ Plans:
 - [ ] 06-02-PLAN.md — Stage 2 graceful fallback: LIFE-08 no-discard path in `lifecycle-manager.js` tick() — when `canDiscard=false`, tabs idle beyond T2 move directly Stage 1→3 via `_saveAndClose`; tabs idle only T1→T2 stay Stage 1; exemption check applied; structured log entry emitted; 5 new tests in `tests/lifecycle-manager.test.js` (Wave 1)
 - [ ] 06-03-PLAN.md — Cross-browser acceptance testing: `tests/build-output.test.js` validates both ZIP structures and manifest schemas; `tests/cross-browser.test.js` extended with Phase 4/5 parity checks; `tests/SMOKE-TEST-CHECKLIST.md` manual browser verification checklist for all four target browsers (Wave 2, depends 06-01, 06-02)
 
+### Phase 7: GA Polish and Store Submission
+**Goal**: TabNest v1.0 is release-ready — all SRS §4.1 performance targets are measured and confirmed, every error path in the background message handler returns a structured response, the sidebar handles empty and loading states gracefully, storage quota errors are handled by pruning and retrying, and the Chrome Web Store submission package (listing copy, screenshots spec, privacy policy, validated manifests) is ready for upload
+**Depends on**: Phase 6
+**Requirements**: NFR-01, NFR-02, NFR-09, NFR-10, NFR-11, NFR-13, NFR-14, NFR-15, NFR-16, NFR-17, NFR-18, NFR-24, NFR-25, NFR-26, NFR-28, NFR-35, NFR-37, NFR-38
+**Success Criteria** (what must be TRUE):
+  1. `node tests/performance.test.js` exits 0 — all four benchmarks (sidebar render, tab classification, storage write, lifecycle tick) report averages below their SRS §4.1 thresholds across 10 iterations each
+  2. `node tests/manifest-validation.test.js` exits 0 — both `manifest.json` (MV3) and `manifest-firefox.json` (MV2) pass all required-field, permission-minimality, CSP format, icon existence, and description-length assertions
+  3. The sidebar shows a loading overlay during the initial GET_FULL_STATE request and an empty state when there are no tabs — neither state is blank or broken
+  4. `StorageManager.saveState()` handles a `QUOTA_EXCEEDED` error by pruning the oldest archived entries and retrying — the extension never crashes or becomes unresponsive due to a storage quota error (NFR-14, NFR-16)
+  5. Every `handleMessage()` case in `background.js` and `background-firefox.js` returns `{ success: false, error: string }` on failure — no uncaught exceptions propagate to the runtime messaging layer (NFR-13, NFR-17)
+  6. `store/STORE-LISTING.md`, `store/SCREENSHOTS-SPEC.md`, and `store/PRIVACY-POLICY.md` all exist and are complete — the listing has a description <= 132 chars; the screenshots spec defines 5 entries at 1280x800; the privacy policy covers zero data collection, local storage disclosure, and all permission justifications
+**Plans**: 3 plans (defined 2026-03-03)
+
+Plans:
+- [ ] 07-01-PLAN.md — Performance audit and optimization: `tests/performance.test.js` benchmarks (NFR-01/02/10/11); `fullRender()` optimized with collapsed-group skipping and `replaceChildren()`; `saveState()` dirty-flag diff guard; `tick()` Array.from snapshot; sidebar.css layout containment hints (Wave 1)
+- [ ] 07-02-PLAN.md — Polish pass: loading overlay + empty state in sidebar.js; Untitled/URL title fallback in tab-entry.js; NaN-proof count badge in group-card.js; QUOTA_EXCEEDED prune+retry in storage-manager.js; try/catch error responses in all handleMessage() cases; `tests/polish.test.js` (Wave 1)
+- [ ] 07-03-PLAN.md — Store submission assets: `store/STORE-LISTING.md` (full CWS listing copy); `store/SCREENSHOTS-SPEC.md` (5-screenshot brief); `store/PRIVACY-POLICY.md` (9-section all-local policy); `tests/manifest-validation.test.js` (32+ assertions on both manifests) (Wave 2, depends 07-01, 07-02)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -146,3 +165,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Intelligence Layer | 4/4 | Complete    | 2026-03-02 |
 | 5. Settings, Shortcuts, and Workspaces | 0/5 | Planned (2026-03-02) | - |
 | 6. Cross-Browser | 0/3 | Planned (2026-03-02) | - |
+| 7. GA Polish and Store Submission | 0/3 | Planned (2026-03-03) | - |
