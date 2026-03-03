@@ -151,18 +151,32 @@
       }
     }
 
-    // Build fragment — one DOM write at end
+    // Build fragment — single atomic DOM write at end (GA 07-01: replaceChildren)
     const fragment = document.createDocumentFragment();
     const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+    let visibleCount = 0;
     for (const group of sortedGroups) {
-      const entries = entriesByGroup.get(group.id) || [];
-      if (entries.length === 0) continue;
-      fragment.appendChild(GroupCard.create(group, entries));
+      const allEntries = entriesByGroup.get(group.id) || [];
+      if (allEntries.length === 0) continue;
+      visibleCount++;
+      // GA 07-01: collapsed groups skip entry-row DOM construction entirely.
+      // Pass allEntries as 4th arg so the count badge shows the real number.
+      const renderEntries = group.isCollapsed ? [] : allEntries;
+      fragment.appendChild(GroupCard.create(group, renderEntries, null, allEntries));
+    }
+
+    // Empty state when no groups have any tabs
+    if (visibleCount === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'tn-empty-state';
+      empty.textContent = _searchQuery
+        ? 'No tabs match your search.'
+        : 'No tabs yet. Open a tab to get started.';
+      fragment.appendChild(empty);
     }
 
     const list = document.getElementById('tn-group-list');
-    list.innerHTML = '';
-    list.appendChild(fragment);
+    list.replaceChildren(fragment);
   }
 
   function renderArchive(savedEntries) {

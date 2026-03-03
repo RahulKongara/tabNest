@@ -1223,3 +1223,23 @@ select:focus {
   border-radius: 4px;
   background: var(--tn-hover, #2a2a2a);
 }
+
+/* ── Performance hints (GA 07-01) ─────────────────────────────────── */
+
+/* Promote the group list to its own compositor layer — prevents repaints
+   on sibling elements (header, footer) from invalidating group cards. */
+#tn-group-list {
+  contain: layout style;
+}
+
+/* Draggable entries: hint to compositor that transform will change.
+   Avoids jank during drag-and-drop. */
+.tn-tab-entry[draggable="true"] {
+  will-change: transform;
+}
+
+/* Color picker popover promoted to own layer to avoid repainting group list
+   when the popover appears/disappears. */
+.tn-color-picker {
+  will-change: opacity, transform;
+}

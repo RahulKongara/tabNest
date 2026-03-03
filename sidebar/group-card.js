@@ -20,11 +20,12 @@
   /**
    * Create a group card element containing all entries for a group.
    * @param {TabGroup} group - { id, name, color, order, isCollapsed, isCustom }
-   * @param {Array<TabEntry|SavedTabEntry>} entries - combined active/discarded/saved entries
-   * @param {Array<SavedTabEntry>} [savedEntriesForCount] - optional saved-only array for count display
+   * @param {Array<TabEntry|SavedTabEntry>} entries - entries to render as DOM rows (may be [] for collapsed groups)
+   * @param {Array<SavedTabEntry>} [savedEntriesForCount] - optional saved-only array for ARIA label count
+   * @param {Array<TabEntry|SavedTabEntry>} [_countEntries] - full entries used for badge count; falls back to entries
    * @returns {HTMLDivElement}
    */
-  function create(group, entries, savedEntriesForCount) {
+  function create(group, entries, savedEntriesForCount, _countEntries) {
     const card = document.createElement('div');
     card.className = 'tn-group-card';
     card.dataset.groupId = group.id;
@@ -113,7 +114,8 @@
 
     const countSpan = document.createElement('span');
     countSpan.className = 'tn-group-count';
-    countSpan.textContent = buildCountText(entries);
+    // GA 07-01: use _countEntries for badge when entries is [] (collapsed optimization)
+    countSpan.textContent = buildCountText(Array.isArray(_countEntries) ? _countEntries : entries);
 
     const collapseBtn = document.createElement('button');
     collapseBtn.className = 'tn-collapse-btn';
@@ -202,10 +204,11 @@
    * @returns {string}
    */
   function buildCountText(entries) {
-    const open = entries.filter(e => e.stage === 'active' || e.stage === 'discarded').length;
-    const saved = entries.filter(e => e.stage === 'saved').length;
+    const arr  = Array.isArray(entries) ? entries : [];
+    const open  = (arr.filter(e => e.stage === 'active' || e.stage === 'discarded').length) || 0;
+    const saved = (arr.filter(e => e.stage === 'saved').length) || 0;
     const parts = [];
-    if (open > 0) parts.push(`${open} open`);
+    if (open  > 0) parts.push(`${open} open`);
     if (saved > 0) parts.push(`${saved} saved`);
     return parts.join(' · ') || '0 tabs';
   }
