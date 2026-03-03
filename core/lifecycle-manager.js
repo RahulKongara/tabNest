@@ -124,7 +124,9 @@
     const stage1to2Candidates = [];
     const stage2to3Candidates = [];
 
-    for (const [tabId, entry] of tabRegistry) {
+    // GA 07-01: Snapshot registry entries to prevent mid-iteration Map mutation
+    const snapshot = Array.from(tabRegistry.entries());
+    for (const [tabId, entry] of snapshot) {
       const idleMs = now - entry.lastActiveTimestamp;
 
       // ── Stage 1 → 2 (Discard) ──────────────────────────────────────────────

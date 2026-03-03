@@ -23,6 +23,9 @@
   let _saveTimer = null;
   const DEBOUNCE_MS = 30 * 1000; // 30-second debounced auto-save
 
+  // GA 07-01: dirty-flag diff — skip writes when state is unchanged (NFR-10 optimization)
+  let _lastSavedStateJson = null;
+
   /**
    * Load full session state from storage.local.
    * Returns the saved session blob, or null if no state has been saved yet.
@@ -53,13 +56,45 @@
    * @returns {Promise<void>}
    */
   async function saveState(state) {
+    state.timestamp = Date.now();
+
+    // GA 07-01: Skip write if state is identical to last save (NFR-10 optimization)
+    const stateJson = JSON.stringify(state);
+    if (stateJson === _lastSavedStateJson) return;
+    _lastSavedStateJson = stateJson;
+
     try {
-      state.timestamp = Date.now();
       await BrowserAdapter.storage.local.set({
         [CONSTANTS.STORAGE_KEYS.SESSION_STATE]: state,
       });
     } catch (err) {
-      console.error('[TabNest] StorageManager.saveState() failed:', err);
+      const isQuota = err && err.message && (
+        err.message.includes('QUOTA_BYTES') ||
+        err.message.includes('QUOTA_EXCEEDED') ||
+        err.message.includes('quota')
+      );
+      if (isQuota) {
+        // GA 07-02: NFR-14 — prune oldest archived entries and retry once
+        console.warn('[TabNest] saveState: QUOTA_EXCEEDED — pruning oldest archived entries');
+        const archived = (state.savedEntries || [])
+          .filter(function(e) { return e.stage === 'archived'; })
+          .sort(function(a, b) { return (a.archivedAt || a.savedAt || 0) - (b.archivedAt || b.savedAt || 0); });
+        const toPrune = archived.slice(0, 20);
+        const pruneIds = new Set(toPrune.map(function(e) { return e.savedId || e.id; }));
+        state.savedEntries = (state.savedEntries || []).filter(function(e) {
+          return !pruneIds.has(e.savedId || e.id);
+        });
+        console.log('[TabNest] saveState: pruned ' + toPrune.length + ' archived entries; retrying');
+        try {
+          await BrowserAdapter.storage.local.set({
+            [CONSTANTS.STORAGE_KEYS.SESSION_STATE]: state,
+          });
+        } catch (retryErr) {
+          console.error('[TabNest] saveState: retry also failed — state not persisted:', retryErr);
+        }
+      } else {
+        console.error('[TabNest] StorageManager.saveState() failed:', err);
+      }
     }
   }
 
@@ -238,6 +273,7 @@
         BrowserAdapter.storage.local.clear(),
         BrowserAdapter.storage.sync.clear(),
       ]);
+      _lastSavedStateJson = null; // GA 07-01: reset dirty flag after clear
       return { success: true };
     } catch (err) {
       console.error('[TabNest] StorageManager.clearAllData() failed:', err);
