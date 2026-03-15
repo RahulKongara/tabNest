@@ -1,4 +1,5 @@
-.planning/
-debug-images/
-Reference Docs
 .claude/
+.planning/
+Reference Docs
+CLAUDE.md
+debug-images
