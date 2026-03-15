@@ -69,18 +69,36 @@
       return { exempt: true, reason: 'form-data' };
     }
 
+    // 5b. Known meeting/conferencing tabs — never discard (audio may be temporarily muted)
+    const MEETING_DOMAINS = [
+      'meet.google.com',
+      'zoom.us',
+      'teams.microsoft.com',
+      'whereby.com',
+      'webex.com',
+      'bluejeans.com',
+      'gotomeeting.com',
+      'chime.aws',
+      'around.co',
+      'gather.town',
+      'discord.com',
+    ];
+    const meetingHostname = getHostname(entry.url);
+    if (MEETING_DOMAINS.includes(meetingHostname)) {
+      return { exempt: true, reason: 'meeting' };
+    }
+
     // 6. Pinned tabs — can reach Stage 2 (discard) but NEVER Stage 3 (close)
     if (entry.isPinned && transitionType === 'stage2to3') {
       return { exempt: true, reason: 'pinned-no-close' };
     }
 
-    // 7. Whitelisted domains — max Stage 2 (same rule as pinned for Stage 3)
+    // 7. Whitelisted domains — exempt from all lifecycle transitions
     const hostname = getHostname(entry.url);
     const whitelist = settings.whitelist || [];
-    if (whitelist.includes(hostname) && transitionType === 'stage2to3') {
+    if (whitelist.includes(hostname)) {
       return { exempt: true, reason: 'whitelisted' };
     }
-    // Whitelisted tabs can still be discarded (Stage 2 is fine)
 
     return { exempt: false, reason: '' };
   }

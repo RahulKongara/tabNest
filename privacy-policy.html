@@ -1,0 +1,486 @@
+<!-- Host this file at your GitHub Pages URL and use that URL in store listings -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — TabNest</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --navy:       #0b0f1a;
+      --navy-mid:   #111827;
+      --navy-card:  #161d2e;
+      --navy-rule:  #1e2a3f;
+      --accent:     #3b7fff;
+      --accent-dim: #1e3a6e;
+      --white:      #f5f7fa;
+      --muted:      #7a8aa8;
+      --serif:      Georgia, serif, monospace;
+      --sans:       system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--navy);
+      color: var(--white);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.75;
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--navy-rule);
+      padding: 2rem 0;
+    }
+
+    .header-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .wordmark {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      text-decoration: none;
+    }
+
+    .wordmark span { color: var(--accent); }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--navy-rule);
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3.5rem;
+      border-bottom: 1px solid var(--navy-rule);
+    }
+
+    .hero-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.25rem, 5vw, 3.25rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      margin-bottom: 1.5rem;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    .hero-meta {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    /* ── Main ── */
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 4rem 2rem 6rem;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-rule);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 4rem;
+    }
+
+    .toc-title {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .toc li {
+      counter-increment: toc;
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .toc a {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.15s;
+    }
+
+    .toc a:hover { color: var(--accent); }
+
+    /* ── Sections ── */
+    section { margin-bottom: 3.5rem; }
+    section:last-child { margin-bottom: 0; }
+
+    .section-number {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    h2 {
+      font-family: var(--serif);
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      margin-bottom: 1.25rem;
+    }
+
+    p {
+      color: #c5cedf;
+      font-size: 0.9375rem;
+      margin-bottom: 1rem;
+    }
+
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Permissions table ── */
+    .perm-grid {
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--navy-rule);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 1.5rem;
+    }
+
+    .perm-row {
+      display: grid;
+      grid-template-columns: 10rem 1fr;
+      border-bottom: 1px solid var(--navy-rule);
+    }
+
+    .perm-row:last-child { border-bottom: none; }
+
+    .perm-name {
+      background: var(--navy-card);
+      padding: 1rem 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--accent);
+      border-right: 1px solid var(--navy-rule);
+      display: flex;
+      align-items: center;
+    }
+
+    .perm-desc {
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      color: #c5cedf;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Bullet list ── */
+    .data-list {
+      list-style: none;
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1.25rem;
+    }
+
+    .data-list li {
+      display: flex;
+      gap: 0.875rem;
+      font-size: 0.9375rem;
+      color: #c5cedf;
+      align-items: flex-start;
+    }
+
+    .data-list li::before {
+      content: '';
+      display: block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 0.6rem;
+    }
+
+    /* ── Highlight box ── */
+    .highlight-box {
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+      color: #c5cedf;
+    }
+
+    .highlight-box strong {
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--navy-rule);
+      margin: 3.5rem 0;
+    }
+
+    /* ── Contact ── */
+    .contact-block {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-rule);
+      border-radius: 6px;
+      padding: 1.75rem 2rem;
+    }
+
+    .contact-block a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .contact-block a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--navy-rule);
+      padding: 2rem;
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .perm-row { grid-template-columns: 1fr; }
+
+      .perm-name {
+        border-right: none;
+        border-bottom: 1px solid var(--navy-rule);
+        padding: 0.75rem 1rem;
+      }
+
+      .perm-desc { padding: 0.75rem 1rem; }
+
+      .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="wordmark" href="#">Tab<span>Nest</span></a>
+    <span class="badge">Browser Extension</span>
+  </div>
+</header>
+
+<div class="hero">
+  <p class="hero-label">Legal</p>
+  <h1>Privacy <em>Policy</em></h1>
+  <p class="hero-meta">Effective date: March 16, 2026 &nbsp;&middot;&nbsp; Applies to TabNest v1.0 and later</p>
+</div>
+
+<main>
+
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#permissions">Permissions &amp; Why We Request Them</a></li>
+      <li><a href="#data-collected">Data Collected</a></li>
+      <li><a href="#data-storage">How Data Is Stored</a></li>
+      <li><a href="#data-sharing">Data Sharing &amp; Third Parties</a></li>
+      <li><a href="#user-control">Your Control Over Data</a></li>
+      <li><a href="#changes">Changes to This Policy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="overview">
+    <span class="section-number">01</span>
+    <h2>Overview</h2>
+    <div class="highlight-box">
+      <strong>The short version:</strong> TabNest stores everything locally on your device. No data is ever transmitted to any server. We collect nothing about you.
+    </div>
+    <p>TabNest is a browser extension that automatically organizes your tabs into smart groups and manages them through a 4-stage lifecycle to reduce RAM usage and clutter. This policy explains what data the extension touches, where it lives, and what we do — and do not do — with it.</p>
+    <p>TabNest is not affiliated with Google, Mozilla, Microsoft, or any browser vendor.</p>
+  </section>
+
+  <section id="permissions">
+    <span class="section-number">02</span>
+    <h2>Permissions &amp; Why We Request Them</h2>
+    <p>TabNest requests the following browser permissions. Each is used exclusively for the feature listed — nothing more.</p>
+
+    <div class="perm-grid">
+      <div class="perm-row">
+        <span class="perm-name">tabs</span>
+        <span class="perm-desc">Read each tab's URL, title, and favicon to build the sidebar view and drive the lifecycle pipeline. This data stays in memory and local storage only.</span>
+      </div>
+      <div class="perm-row">
+        <span class="perm-name">storage</span>
+        <span class="perm-desc">Persist tab snapshots, group metadata (names, colors, order), and user preferences in chrome.storage.local and chrome.storage.sync on your device.</span>
+      </div>
+      <div class="perm-row">
+        <span class="perm-name">alarms</span>
+        <span class="perm-desc">Schedule a 30-second background tick that advances tabs through lifecycle stages (Active → Discarded → Saved → Archived) without requiring an open UI.</span>
+      </div>
+      <div class="perm-row">
+        <span class="perm-name">sidePanel</span>
+        <span class="perm-desc">Render the TabNest sidebar panel alongside your browser window. Used by Chrome, Edge, and Brave (Manifest V3).</span>
+      </div>
+      <div class="perm-row">
+        <span class="perm-name">webNavigation</span>
+        <span class="perm-desc">Capture a tab's navigation history (up to 20 URLs) before the tab is closed, so it can be fully restored later.</span>
+      </div>
+      <div class="perm-row">
+        <span class="perm-name">activeTab</span>
+        <span class="perm-desc">Identify the currently active tab so it is never automatically discarded or closed by the lifecycle pipeline.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="data-collected">
+    <span class="section-number">03</span>
+    <h2>Data Collected</h2>
+    <p>TabNest processes the following data locally in order to function. None of it is "collected" in the sense of leaving your device.</p>
+    <ul class="data-list">
+      <li>Tab URLs, titles, and favicons — used to display tabs in the sidebar and classify them into groups.</li>
+      <li>Tab lifecycle metadata — timestamps recording when a tab was last active, created, saved, or archived.</li>
+      <li>Navigation history — up to 20 URLs per tab, captured before closure to enable full session restore.</li>
+      <li>Group configuration — names, colors, ordering, and domain rules you define.</li>
+      <li>User preferences — lifecycle thresholds, keyboard shortcuts, and display settings.</li>
+      <li>Workspace snapshots — point-in-time saves of your entire tab layout (up to 20 snapshots).</li>
+    </ul>
+    <p style="margin-top:1.25rem;">TabNest does <strong style="color:var(--white);font-weight:500;">not</strong> collect your name, email address, IP address, device identifiers, or any form of personal profile.</p>
+  </section>
+
+  <section id="data-storage">
+    <span class="section-number">04</span>
+    <h2>How Data Is Stored</h2>
+    <p>All data is stored exclusively through the browser's built-in storage APIs:</p>
+    <ul class="data-list">
+      <li><strong style="color:var(--white);font-weight:500;">chrome.storage.local</strong> (up to 10 MB) — tab snapshots, saved entries, navigation history, workspace snapshots, and session checkpoints. This data never leaves your device.</li>
+      <li><strong style="color:var(--white);font-weight:500;">chrome.storage.sync</strong> (up to 100 KB) — user preferences and group metadata. This syncs between your own signed-in browser instances via Google or Mozilla sync infrastructure. TabNest has no access to that sync channel — the browser handles it entirely.</li>
+    </ul>
+    <div class="highlight-box" style="margin-top:1.5rem;">
+      <strong>No external servers.</strong> TabNest has no backend, no API endpoint, no database, and makes no network requests of any kind. The extension operates entirely offline within your browser.
+    </div>
+  </section>
+
+  <section id="data-sharing">
+    <span class="section-number">05</span>
+    <h2>Data Sharing &amp; Third Parties</h2>
+    <p>TabNest does not share any data with any third party. Specifically:</p>
+    <ul class="data-list">
+      <li>No analytics or usage tracking (no Google Analytics, Mixpanel, or similar).</li>
+      <li>No telemetry or crash reporting sent to any remote service.</li>
+      <li>No advertising networks or data brokers.</li>
+      <li>No remote configuration or feature-flag services.</li>
+      <li>No content delivery networks — all extension assets are bundled locally.</li>
+    </ul>
+    <p style="margin-top:1.25rem;">The extension source code is available in its repository for independent verification of these claims.</p>
+  </section>
+
+  <section id="user-control">
+    <span class="section-number">06</span>
+    <h2>Your Control Over Data</h2>
+    <p>You have full control over all data TabNest stores:</p>
+    <ul class="data-list">
+      <li><strong style="color:var(--white);font-weight:500;">Delete individual entries</strong> — remove any saved or archived tab directly from the sidebar.</li>
+      <li><strong style="color:var(--white);font-weight:500;">Clear all data</strong> — use the Settings page within TabNest to wipe all local storage at once.</li>
+      <li><strong style="color:var(--white);font-weight:500;">Uninstall</strong> — removing the extension from your browser deletes all associated storage data automatically.</li>
+      <li><strong style="color:var(--white);font-weight:500;">Disable sync</strong> — turn off syncing for extensions in your browser's account settings to prevent chrome.storage.sync from replicating across devices.</li>
+    </ul>
+  </section>
+
+  <section id="changes">
+    <span class="section-number">07</span>
+    <h2>Changes to This Policy</h2>
+    <p>If this policy is updated in a material way, the "Effective date" at the top of the page will be revised. Because TabNest collects no contact information, we cannot proactively notify users of changes — please review this page periodically.</p>
+    <p>Any future version that introduces network communication or data collection will require a new store submission and explicit permission grants from users before taking effect.</p>
+  </section>
+
+  <hr />
+
+  <section id="contact">
+    <span class="section-number">08</span>
+    <h2>Contact</h2>
+    <div class="contact-block">
+      <p>Questions about this policy or TabNest's data practices? Reach out:</p>
+      <p style="margin-top:0.75rem;"><strong style="color:var(--white);font-weight:500;">Email:</strong> <a href="mailto:rahul.kongara13@gmail.com">rahul.kongara13@gmail.com</a></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>TabNest &mdash; Privacy Policy &mdash; Last updated March 16, 2026</p>
+</footer>
+
+</body>
+</html>

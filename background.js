@@ -43,6 +43,11 @@ globalThis._tabRegistry = tabRegistry; // exposed for LifecycleManager and debug
 
 const preWarmMap = new Map(); // savedId → preWarmTabId (RESTORE-02)
 
+// tabIds currently mid-way through saveAndCloseTab().
+// onRemoved uses this to suppress the redundant TAB_REMOVED push when we are
+// the ones removing the tab — TAB_SAVED_AND_CLOSED covers that update atomically.
+const savingTabIds = new Set();
+
 // User rules cache — loaded from storage.sync on init and refreshed on settings change.
 // Avoids async work in the hot onCreated event path.
 // TODO(Phase 5): Settings panel must call refreshUserRulesCache() after saving new rules.
@@ -237,6 +242,8 @@ function buildSessionState() {
  * @param {TabEntry} entry
  */
 async function saveAndCloseTab(tabId, entry) {
+  savingTabIds.add(tabId); // prevent onRemoved from pushing TAB_REMOVED for this tab
+
   const savedId = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${tabId}`;
@@ -282,6 +289,8 @@ async function saveAndCloseTab(tabId, entry) {
     await BrowserAdapter.tabs.remove(tabId);
   } catch (err) {
     console.warn(`[TabNest] saveAndCloseTab: failed to close tabId=${tabId}:`, err.message);
+  } finally {
+    savingTabIds.delete(tabId);
   }
 
   pushToSidebar(MSG_TYPES.TAB_SAVED_AND_CLOSED, { entry, savedEntry });
@@ -333,7 +342,11 @@ BrowserAdapter.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // LIFE-01: onRemoved — remove tab from registry
 BrowserAdapter.tabs.onRemoved.addListener((tabId) => {
   tabRegistry.delete(tabId);
-  pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
+  // Suppress TAB_REMOVED when saveAndCloseTab() is the one closing this tab —
+  // it sends TAB_SAVED_AND_CLOSED which handles the sidebar update atomically.
+  if (!savingTabIds.has(tabId)) {
+    pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
+  }
   console.log(`[TabNest] Tab removed: ${tabId}`);
   StorageManager.scheduleSave(buildSessionState());
 });
@@ -377,13 +390,17 @@ BrowserAdapter.tabs.onDetached.addListener((_tabId, _detachInfo) => {
 });
 
 // LIFE-01: onReplaced — browser replaces a tab (e.g., pre-rendering).
-// Transfer the old entry to the new tabId.
+// Transfer the old entry to the new tabId and sync the sidebar so it doesn't
+// hold a stale tabId that causes "No tab with id" errors on close/discard.
 BrowserAdapter.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
   const oldEntry = tabRegistry.get(removedTabId);
   if (oldEntry) {
     oldEntry.tabId = addedTabId;
     tabRegistry.set(addedTabId, oldEntry);
     tabRegistry.delete(removedTabId);
+    // Sidebar: remove old entry, add new one with the updated tabId
+    pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId: removedTabId });
+    pushToSidebar(MSG_TYPES.TAB_CREATED, { entry: oldEntry });
   }
 });
 
@@ -453,12 +470,9 @@ BrowserAdapter.alarms.onAlarm.addListener(async (alarm) => {
     // Load current settings for this tick
     let settings = CONSTANTS.DEFAULT_SETTINGS;
     try {
-      const stored = await BrowserAdapter.storage.local.get(CONSTANTS.STORAGE_KEYS.SETTINGS);
-      if (stored[CONSTANTS.STORAGE_KEYS.SETTINGS]) {
-        settings = { ...CONSTANTS.DEFAULT_SETTINGS, ...stored[CONSTANTS.STORAGE_KEYS.SETTINGS] };
-      }
+      settings = await StorageManager.getSettings();
     } catch {
-      // Use defaults if storage read fails
+      // Use defaults
     }
     await LifecycleManager.tick(tabRegistry, settings, pushToSidebar, saveAndCloseTab);
     // ── Stage 3→4 (Archive) promotion ────────────────────────────────────────
@@ -607,10 +621,47 @@ async function handleMessage(message, sender) {
         const { tabId } = data || {};
         if (tabId == null) return { success: false, error: 'tabId is required' };
         await BrowserAdapter.tabs.discard(tabId);
+        // Update the registry entry and notify the sidebar immediately so the
+        // stage indicator flips to "discarded" without waiting for the next 30s tick.
+        const entry = tabRegistry.get(tabId);
+        if (entry) {
+          entry.stage = CONSTANTS.STAGE.DISCARDED;
+          pushToSidebar(MSG_TYPES.TAB_DISCARDED, { entry });
+        }
         return { success: true };
       } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        // Tab no longer exists in the browser — clean up the stale sidebar entry.
+        if (msg.includes('No tab with id')) {
+          const { tabId } = data || {};
+          tabRegistry.delete(tabId);
+          pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
+          return { success: true };
+        }
         console.error('[TabNest] DISCARD_TAB failed:', err);
-        return { success: false, error: err && err.message ? err.message : String(err) };
+        return { success: false, error: msg };
+      }
+    }
+
+    case MSG_TYPES.CLOSE_TAB: {
+      // Close the tab without saving — equivalent to pressing the browser's X button.
+      // onRemoved will fire and push TAB_REMOVED to the sidebar.
+      try {
+        const { tabId } = data || {};
+        if (tabId == null) return { success: false, error: 'tabId is required' };
+        await BrowserAdapter.tabs.remove(tabId);
+        return { success: true };
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        // Tab no longer exists — still remove the stale entry from the sidebar.
+        if (msg.includes('No tab with id')) {
+          const { tabId } = data || {};
+          tabRegistry.delete(tabId);
+          pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
+          return { success: true };
+        }
+        console.error('[TabNest] CLOSE_TAB failed:', err);
+        return { success: false, error: msg };
       }
     }
 
@@ -654,7 +705,11 @@ async function handleMessage(message, sender) {
     case MSG_TYPES.SAVE_AND_CLOSE_TAB: {
       const { tabId } = data || {};
       const entry = tabRegistry.get(tabId);
-      if (!entry) return { success: false, error: 'Tab not found in registry' };
+      if (!entry) {
+        // Stale tabId (tab was replaced or already closed) — clean up the sidebar entry.
+        pushToSidebar(MSG_TYPES.TAB_REMOVED, { tabId });
+        return { success: false, error: 'Tab not found in registry' };
+      }
       await saveAndCloseTab(tabId, entry);
       tabRegistry.delete(tabId);
       return { success: true };

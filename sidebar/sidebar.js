@@ -313,10 +313,19 @@
     const { type, data } = message || {};
 
     switch (type) {
-      case MSG_TYPES.TAB_CREATED:
-        _state.tabs.push(data.entry);
+      case MSG_TYPES.TAB_CREATED: {
+        // Upsert by tabId — during Chrome session restore onCreated fires for every
+        // restored tab, but GET_FULL_STATE may have already loaded those same tabs.
+        // Always pushing creates the active+discarded duplicate rows seen in the UI.
+        const existingTabIdx = _state.tabs.findIndex(t => t.tabId === data.entry.tabId);
+        if (existingTabIdx !== -1) {
+          _state.tabs[existingTabIdx] = data.entry;
+        } else {
+          _state.tabs.push(data.entry);
+        }
         fullRender();
         break;
+      }
 
       case MSG_TYPES.TAB_UPDATED: {
         const idx = _state.tabs.findIndex(t => t.tabId === data.entry.tabId);
@@ -342,7 +351,16 @@
 
       case MSG_TYPES.TAB_SAVED_AND_CLOSED:
         _state.tabs = _state.tabs.filter(t => t.tabId !== (data.entry && data.entry.tabId));
-        if (data.savedEntry) _state.savedEntries.push(data.savedEntry);
+        if (data.savedEntry) {
+          // Mirror the background-side URL dedup so the sidebar never shows duplicates
+          // when the same URL is saved-and-closed more than once.
+          const existingIdx = _state.savedEntries.findIndex(e => e.url === data.savedEntry.url);
+          if (existingIdx !== -1) {
+            _state.savedEntries[existingIdx] = data.savedEntry;
+          } else {
+            _state.savedEntries.push(data.savedEntry);
+          }
+        }
         fullRender();
         break;
 
@@ -448,6 +466,7 @@
       const items = [];
       if (!isSaved && tabId) {
         items.push({ label: 'Discard',      action: () => chrome.runtime.sendMessage({ type: MSG_TYPES.DISCARD_TAB,        data: { tabId } }) });
+        items.push({ label: 'Close',        action: () => chrome.runtime.sendMessage({ type: MSG_TYPES.CLOSE_TAB,          data: { tabId } }) });
         items.push({ label: 'Save & Close', action: () => chrome.runtime.sendMessage({ type: MSG_TYPES.SAVE_AND_CLOSE_TAB, data: { tabId } }) });
       }
       if (isSaved && savedId) {
@@ -547,6 +566,8 @@
 
       if (btn.classList.contains('tn-action-discard') && tabId) {
         chrome.runtime.sendMessage({ type: MSG_TYPES.DISCARD_TAB,        data: { tabId } });
+      } else if (btn.classList.contains('tn-action-close-tab') && tabId) {
+        chrome.runtime.sendMessage({ type: MSG_TYPES.CLOSE_TAB,          data: { tabId } });
       } else if (btn.classList.contains('tn-action-close') && tabId) {
         chrome.runtime.sendMessage({ type: MSG_TYPES.SAVE_AND_CLOSE_TAB, data: { tabId } });
       } else if (btn.classList.contains('tn-action-restore') && savedId) {
@@ -761,8 +782,49 @@
     if (overlay) overlay.remove();
   }
 
+  // ── Theme Toggle (dark/light mode) ────────────────────────────────────────────
+  function _initTheme() {
+    const saved = localStorage.getItem('tn-theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    if (theme === 'dark') {
+      document.body.setAttribute('data-theme', 'dark');
+    }
+    _updateThemeBtn(theme);
+
+    const themeBtn = document.getElementById('tn-theme-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function () {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const next = isDark ? 'light' : 'dark';
+        if (next === 'dark') {
+          document.body.setAttribute('data-theme', 'dark');
+        } else {
+          document.body.removeAttribute('data-theme');
+        }
+        localStorage.setItem('tn-theme', next);
+        _updateThemeBtn(next);
+      });
+    }
+  }
+
+  function _updateThemeBtn(theme) {
+    const btn = document.getElementById('tn-theme-btn');
+    if (!btn) return;
+    if (theme === 'dark') {
+      btn.textContent = '☀️';
+      btn.setAttribute('aria-label', 'Switch to light mode');
+      btn.setAttribute('title', 'Light mode');
+    } else {
+      btn.textContent = '🌙';
+      btn.setAttribute('aria-label', 'Switch to dark mode');
+      btn.setAttribute('title', 'Dark mode');
+    }
+  }
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   async function init() {
+    _initTheme();                 // Apply saved theme before any rendering
     _showLoadingOverlay();        // GA 07-02: show loading indicator immediately
     connectToBackground();
     setupEventDelegation();
@@ -795,6 +857,16 @@
     try {
       const data = await loadInitialState();
       _removeLoadingOverlay();    // GA 07-02: remove on success before rendering
+      // Defensive dedup: the registry should never have duplicate tabIds, but if it does
+      // (e.g. onCreated races during session restore), collapse them here so the UI stays clean.
+      if (Array.isArray(data.tabs)) {
+        const seen = new Set();
+        data.tabs = data.tabs.filter(t => {
+          if (seen.has(t.tabId)) return false;
+          seen.add(t.tabId);
+          return true;
+        });
+      }
       _state = { ...data, workspaces: [] };
       fullRender();
 

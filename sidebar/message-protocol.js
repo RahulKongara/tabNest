@@ -24,6 +24,7 @@
 
     // Tab lifecycle operations
     DISCARD_TAB:          'DISCARD_TAB',
+    CLOSE_TAB:            'CLOSE_TAB',       // close without saving (regular browser close)
     SAVE_AND_CLOSE_TAB:   'SAVE_AND_CLOSE_TAB',
     RESTORE_TAB:          'RESTORE_TAB',
     SAVE_ALL_INACTIVE:    'SAVE_ALL_INACTIVE',

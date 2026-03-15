@@ -111,16 +111,24 @@
       const discardBtn = document.createElement('button');
       discardBtn.className = 'tn-action-btn tn-action-discard';
       discardBtn.setAttribute('aria-label', 'Discard ' + tabLabel);
-      discardBtn.title = 'Discard';
+      discardBtn.title = 'Discard (free memory, tab stays)';
       discardBtn.innerHTML = '&#128473;';
+
+      // Close without saving — same as pressing the browser's X button
+      const closeTabBtn = document.createElement('button');
+      closeTabBtn.className = 'tn-action-btn tn-action-close-tab';
+      closeTabBtn.setAttribute('aria-label', 'Close ' + tabLabel + ' without saving');
+      closeTabBtn.title = 'Close';
+      closeTabBtn.innerHTML = '&#10005;'; // ✕
 
       const closeBtn = document.createElement('button');
       closeBtn.className = 'tn-action-btn tn-action-close';
       closeBtn.setAttribute('aria-label', 'Save and close ' + tabLabel);
       closeBtn.title = 'Save & Close';
-      closeBtn.innerHTML = '&#10006;';
+      closeBtn.innerHTML = '&#128190;'; // 💾
 
       actions.appendChild(discardBtn);
+      actions.appendChild(closeTabBtn);
       actions.appendChild(closeBtn);
     } else {
       // saved/archived — restore button only
